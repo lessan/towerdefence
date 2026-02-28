@@ -3,6 +3,7 @@ import { flushInput, getSelectedTowerType, setSelectedTowerType } from './input.
 import { menuButtons } from './renderer.js';
 import { sidebarHitTest } from './ui.js';
 import { placeTower, sellTower } from './towers.js';
+import { getTile } from './grid.js';
 import { updateEnemies } from './enemies.js';
 import { updateCombat } from './combat.js';
 import { updateWaveSpawner, startWave } from './waves.js';
@@ -34,23 +35,43 @@ export function update(dt) {
             handleSidebarAction(sidebarAction);
             continue;
           }
-          // Tower placement (only in game grid area x < 640)
+          // Game grid clicks (x < 640)
           if (e.x < 640) {
             const tileX = Math.floor(e.x / 32);
             const tileY = Math.floor(e.y / 32);
-            const result = placeTower(tileX, tileY, getSelectedTowerType());
-            if (!result.success) state.feedback = { message: result.reason, timer: 1.5 };
+            const tile = getTile(state.grid, tileX, tileY);
+            if (tile && tile.type === 'TOWER') {
+              // Select placed tower for inspection
+              state.selectedTowerTile = { x: tileX, y: tileY };
+            } else {
+              // Deselect any selected tower, then place
+              state.selectedTowerTile = null;
+              const result = placeTower(tileX, tileY, getSelectedTowerType());
+              if (!result.success) state.feedback = { message: result.reason, timer: 1.5 };
+            }
           }
         } else if (e.type === 'click' && e.button === 2 && e.x < 640) {
           const tileX = Math.floor(e.x / 32);
           const tileY = Math.floor(e.y / 32);
           const result = sellTower(tileX, tileY);
-          if (result.success) state.feedback = { message: `+${result.refund}g`, timer: 1.0 };
+          if (result.success) {
+            state.feedback = { message: `+${result.refund}g`, timer: 1.0 };
+            // Clear selection if we sold the selected tower
+            if (state.selectedTowerTile && state.selectedTowerTile.x === tileX && state.selectedTowerTile.y === tileY) {
+              state.selectedTowerTile = null;
+            }
+          }
         } else if (e.type === 'keydown') {
           const keyMap = { '1': 'crossbow', '2': 'brazier', '3': 'belltower', '4': 'ballista' };
-          if (keyMap[e.key]) setSelectedTowerType(keyMap[e.key]);
-          if (e.key === '5' && state.unlocks.lemonadecan) setSelectedTowerType('lemonadecan');
+          if (keyMap[e.key]) { setSelectedTowerType(keyMap[e.key]); state.selectedTowerTile = null; }
+          if (e.key === '5' && state.unlocks.lemonadecan) { setSelectedTowerType('lemonadecan'); state.selectedTowerTile = null; }
           if (e.key === 't' || e.key === 'T') state.turboMode = !state.turboMode;
+          if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedTowerTile) {
+            const st = state.selectedTowerTile;
+            const result = sellTower(st.x, st.y);
+            if (result.success) state.feedback = { message: `+${result.refund}g`, timer: 1.0 };
+            state.selectedTowerTile = null;
+          }
         }
       }
       // Tick feedback timer
@@ -108,6 +129,14 @@ function handleSidebarAction(action) {
     case 'startwave':
       if (state.current === STATES.WAVE_IDLE && state.wave < state.totalWaves) {
         startWave();
+      }
+      break;
+    case 'sell':
+      if (state.selectedTowerTile) {
+        const st = state.selectedTowerTile;
+        const result = sellTower(st.x, st.y);
+        if (result.success) state.feedback = { message: `+${result.refund}g`, timer: 1.0 };
+        state.selectedTowerTile = null;
       }
       break;
     default:

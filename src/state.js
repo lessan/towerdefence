@@ -37,6 +37,7 @@ export const state = {
   autoProceed: false,
   mouseX: 0,
   mouseY: 0,
+  selectedTowerTile: null,
 };
 
 export function transitionTo(newState) {
@@ -58,6 +59,7 @@ export function initGameState(mode) {
   state.gridDirty = true;
   state.newUnlock = false;
   state.unlockChecked = false;
+  state.selectedTowerTile = null;
 }
 
 // Call after any grid change. Recomputes path and caches it.

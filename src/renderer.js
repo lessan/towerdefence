@@ -269,6 +269,29 @@ function drawTileSprite(ctx, tile, x, y) {
 }
 
 function drawRangePreview(ctx) {
+  // Show range for selected (clicked) placed tower
+  if (state.selectedTowerTile) {
+    const st = state.selectedTowerTile;
+    const tile = getTile(state.grid, st.x, st.y);
+    if (tile && tile.type === 'TOWER' && tile.towerRef) {
+      const rangePx = tile.towerRef.range * 32;
+      const cx = st.x * 32 + 16;
+      const cy = st.y * 32 + 16;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rangePx, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,200,100,0.25)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,200,100,0.6)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // Highlight border around selected tower tile
+      ctx.strokeStyle = '#ffcc44';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(st.x * 32, st.y * 32, 32, 32);
+    }
+  }
+
+  // Show range preview for hovered GRASS tile (placement preview)
   const mx = state.hoverTileX;
   const my = state.hoverTileY;
   if (mx === undefined || my === undefined) return;
@@ -276,30 +299,20 @@ function drawRangePreview(ctx) {
   const tile = getTile(state.grid, mx, my);
   if (!tile) return;
 
-  let rangePx = 0;
-  let colour = 'rgba(255,255,255,0.2)';
-
   if (tile.type === 'GRASS') {
-    // Hovering buildable tile — show selected tower range
     const def = TOWER_DEFS[getSelectedTowerType()];
-    if (def) rangePx = def.range * 32;
-    colour = 'rgba(100,200,255,0.2)';
-  } else if (tile.type === 'TOWER' && tile.towerRef) {
-    // Hovering placed tower — show its range
-    rangePx = tile.towerRef.range * 32;
-    colour = 'rgba(255,200,100,0.25)';
-  }
-
-  if (rangePx > 0) {
-    const cx = mx * 32 + 16;
-    const cy = my * 32 + 16;
-    ctx.beginPath();
-    ctx.arc(cx, cy, rangePx, 0, Math.PI * 2);
-    ctx.fillStyle = colour;
-    ctx.fill();
-    ctx.strokeStyle = colour.replace('0.2', '0.6').replace('0.25', '0.6');
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    if (def) {
+      const rangePx = def.range * 32;
+      const cx = mx * 32 + 16;
+      const cy = my * 32 + 16;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rangePx, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(100,200,255,0.2)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(100,200,255,0.6)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
   }
 }
 

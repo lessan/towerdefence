@@ -1,5 +1,6 @@
 import { state, STATES } from './state.js';
 import { TOWER_DEFS } from './towers.js';
+import { getTile } from './grid.js';
 import { drawSprite } from './sprites.js';
 import { getSelectedTowerType, setSelectedTowerType } from './input.js';
 
@@ -18,6 +19,7 @@ const SLOT_W = 240;
 const BTN_STARTWAVE   = { x: SB_X + 10, y: 310, w: 240, h: 34 };
 const BTN_AUTOPROCEED = { x: SB_X + 10, y: 352, w: 240, h: 28 };
 const BTN_TURBO       = { x: SB_X + 10, y: 388, w: 240, h: 28 };
+const BTN_SELL        = { x: SB_X + 10, y: 296, w: 240, h: 22 };
 const BTN_MENU        = { x: SB_X + 10, y: 434, w: 240, h: 34 };
 
 function getTowerList() {
@@ -100,15 +102,47 @@ export function renderSidebar(ctx) {
   });
 
   // Selected tower description area (y: 268–308)
-  const selDef = towers.find(t => t.id === selected);
-  if (selDef) {
-    ctx.fillStyle = '#aaccff';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('DMG: ' + selDef.damage + '  RNG: ' + selDef.range + '  SPD: ' + selDef.fireRate + '/s', SLOT_X, 280);
-    if (selDef.special) {
-      ctx.fillStyle = '#88ffaa';
-      ctx.fillText('Special: ' + selDef.special, SLOT_X, 296);
+  if (state.selectedTowerTile) {
+    // Show selected placed tower info + sell button
+    const tile = getTile(state.grid, state.selectedTowerTile.x, state.selectedTowerTile.y);
+    if (tile && tile.type === 'TOWER' && tile.towerRef) {
+      const tw = tile.towerRef;
+      const refund = Math.floor(tw.cost * 0.8);
+      ctx.fillStyle = '#ffcc44';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(tw.name || tw.type, SLOT_X, 274);
+      ctx.fillStyle = '#aaccff';
+      ctx.font = '10px monospace';
+      ctx.fillText('DMG: ' + tw.damage + '  RNG: ' + tw.range + '  SPD: ' + tw.fireRate + '/s', SLOT_X, 288);
+
+      // Sell button
+      ctx.fillStyle = '#6a2222';
+      ctx.fillRect(BTN_SELL.x, BTN_SELL.y, BTN_SELL.w, BTN_SELL.h);
+      ctx.strokeStyle = '#8a3333';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(BTN_SELL.x, BTN_SELL.y, BTN_SELL.w, BTN_SELL.h);
+      ctx.fillStyle = '#ffaaaa';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('SELL +' + refund + 'g (80%)', BTN_SELL.x + BTN_SELL.w / 2, BTN_SELL.y + 16);
+      ctx.fillStyle = '#888899';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('[DEL] to sell', SLOT_X + SLOT_W, BTN_SELL.y + 32);
+    }
+  } else {
+    // Show tower-to-place description
+    const selDef = towers.find(t => t.id === selected);
+    if (selDef) {
+      ctx.fillStyle = '#aaccff';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('DMG: ' + selDef.damage + '  RNG: ' + selDef.range + '  SPD: ' + selDef.fireRate + '/s', SLOT_X, 280);
+      if (selDef.special) {
+        ctx.fillStyle = '#88ffaa';
+        ctx.fillText('Special: ' + selDef.special, SLOT_X, 296);
+      }
     }
   }
 
@@ -193,6 +227,9 @@ export function sidebarHitTest(x, y) {
       return 'tower:' + towers[i].id;
     }
   }
+
+  // Sell button (only when a tower is selected)
+  if (state.selectedTowerTile && hitRect(x, y, BTN_SELL)) return 'sell';
 
   // Start Wave button
   if (hitRect(x, y, BTN_STARTWAVE)) return 'startwave';
