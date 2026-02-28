@@ -3,11 +3,12 @@ import { getTile, TILE_TYPES } from './grid.js';
 import { getSelectedTowerType } from './input.js';
 import { TOWER_DEFS } from './towers.js';
 import { drawSprite } from './sprites.js';
+import { renderTowerPanel } from './ui.js';
 
 // Button hit areas exported for input detection
 export const menuButtons = {
-  regular: { x: 220, y: 260, w: 200, h: 36 },
-  boss: { x: 220, y: 310, w: 200, h: 36 },
+  regular: { x: 210, y: 280, w: 220, h: 40 },
+  boss: { x: 210, y: 335, w: 220, h: 40 },
 };
 
 export function render(ctx) {
@@ -31,36 +32,69 @@ export function render(ctx) {
 }
 
 function renderMenu(ctx) {
-  ctx.fillStyle = '#1a1a2e';
+  // Dark starry background
+  ctx.fillStyle = '#0d0d1f';
   ctx.fillRect(0, 0, 640, 480);
-  ctx.fillStyle = '#f5e642';
-  ctx.font = 'bold 36px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('REALM RAMPARTS', 320, 200);
 
-  // Regular Mode button
+  // Decorative pixel-art style border
+  ctx.strokeStyle = '#554488';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(12, 12, 616, 456);
+  ctx.strokeStyle = '#332266';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(18, 18, 604, 444);
+
+  // Title
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 52px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('REALM', 320, 140);
+  ctx.fillStyle = '#e6c200';
+  ctx.fillText('RAMPARTS', 320, 200);
+
+  // Subtitle
+  ctx.fillStyle = '#9988cc';
+  ctx.font = '15px monospace';
+  ctx.fillText('a maze-builder tower defence', 320, 235);
+
+  // Mode buttons
   const rb = menuButtons.regular;
-  ctx.fillStyle = '#3a7d44';
-  ctx.fillRect(rb.x, rb.y, rb.w, rb.h);
-  ctx.strokeStyle = '#5cb85c';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(rb.x, rb.y, rb.w, rb.h);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '18px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('Regular Mode', rb.x + rb.w / 2, rb.y + 24);
-
-  // Boss Mode button
+  drawMenuButton(ctx, rb.x + rb.w / 2, rb.y + rb.h / 2, rb.w, rb.h, 'Regular Mode  \u25B6', '#3a6a3a', '#4a8a4a');
   const bb = menuButtons.boss;
-  ctx.fillStyle = '#7d3a3a';
-  ctx.fillRect(bb.x, bb.y, bb.w, bb.h);
-  ctx.strokeStyle = '#c85c5c';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(bb.x, bb.y, bb.w, bb.h);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '18px monospace';
+  drawMenuButton(ctx, bb.x + bb.w / 2, bb.y + bb.h / 2, bb.w, bb.h, 'Boss Mode  \u2694', '#6a2a2a', '#8a3a3a');
+
+  // Unlock hint
+  if (state.unlocks.lemonadecan) {
+    ctx.fillStyle = '#FFD700';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('\u{1F3C6} Lemonade Can unlocked', 320, 415);
+  } else {
+    ctx.fillStyle = '#554466';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('complete regular mode (\u226510 lives) to unlock secret tower', 320, 415);
+  }
+
+  // Controls hint
+  ctx.fillStyle = '#443355';
+  ctx.font = '11px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Boss Mode', bb.x + bb.w / 2, bb.y + 24);
+  ctx.fillText('[1-4] select tower   click to place   right-click to sell', 320, 445);
+}
+
+function drawMenuButton(ctx, cx, cy, w, h, label, bg, hover) {
+  const x = cx - w / 2;
+  const y = cy - h / 2;
+  ctx.fillStyle = bg;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = hover;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, h);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, cx, cy + 6);
 }
 
 function renderGame(ctx) {
@@ -127,16 +161,24 @@ function renderGame(ctx) {
   // Layer 9: HUD bar
   renderHUD(ctx);
 
-  // Layer 10: Tower panel / Start Wave button (bottom area)
+  // Layer 10: Tower panel (bottom area)
+  if (state.current === STATES.WAVE_IDLE || state.current === STATES.WAVE_RUNNING) {
+    renderTowerPanel(ctx);
+  }
+
+  // Start Wave button (drawn on top of panel area)
   if (state.current === STATES.WAVE_IDLE) {
     const btnLabel = state.wave === 0
       ? 'Start Wave 1'
       : state.waveIdleTimer > 0
-        ? `Next wave in ${Math.ceil(state.waveIdleTimer)}s`
-        : `Send Wave ${state.wave + 1}`;
+        ? 'Next wave in ' + Math.ceil(state.waveIdleTimer) + 's'
+        : 'Send Wave ' + (state.wave + 1);
 
     ctx.fillStyle = state.waveIdleTimer > 0 ? '#555566' : '#4a7c59';
     ctx.fillRect(440, 450, 190, 28);
+    ctx.strokeStyle = '#6a9c79';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(440, 450, 190, 28);
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
@@ -155,22 +197,34 @@ function renderGame(ctx) {
 }
 
 function renderHUD(ctx) {
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.fillRect(0, 0, 640, 28);
+  ctx.fillStyle = 'rgba(10, 8, 20, 0.85)';
+  ctx.fillRect(0, 0, 640, 26);
+
+  // Gold
   ctx.fillStyle = '#FFD700';
-  ctx.font = '14px monospace';
+  ctx.font = 'bold 13px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`Gold: ${state.gold}`, 8, 18);
-  ctx.fillStyle = '#ff6666';
-  ctx.fillText(`Lives: ${state.lives}`, 120, 18);
-  ctx.fillStyle = '#aaffaa';
-  ctx.fillText(`Wave: ${state.wave}/${state.totalWaves}`, 220, 18);
-  ctx.fillStyle = '#ffffff';
-  const selected = getSelectedTowerType();
-  const def = TOWER_DEFS[selected];
-  const label = def ? `${def.name} (${def.cost}g)` : selected;
-  const hint = state.unlocks.lemonadecan ? `[1-5] ${label}  [R-click] sell` : `[1-4] ${label}  [R-click] sell`;
-  ctx.fillText(hint, 340, 18);
+  ctx.fillText('\u2B21 ' + state.gold + 'g', 8, 17);
+
+  // Lives
+  ctx.fillStyle = state.lives <= 5 ? '#ff4444' : '#ff9999';
+  ctx.fillText('\u2665 ' + state.lives, 100, 17);
+
+  // Wave
+  ctx.fillStyle = '#aaddff';
+  ctx.fillText('Wave ' + state.wave + '/' + state.totalWaves, 175, 17);
+
+  // Mode badge
+  ctx.fillStyle = state.mode === 'boss' ? '#ff6644' : '#88cc88';
+  ctx.fillText(state.mode === 'boss' ? '\u2694 BOSS' : '\u2605 REGULAR', 290, 17);
+
+  // Selected tower name
+  const def = TOWER_DEFS[getSelectedTowerType()];
+  if (def) {
+    ctx.fillStyle = '#ccccff';
+    ctx.textAlign = 'right';
+    ctx.fillText('\u25B8 ' + def.name + ' (' + def.cost + 'g)', 632, 17);
+  }
 }
 
 function drawTileSprite(ctx, tile, x, y) {
@@ -267,7 +321,7 @@ function drawProjectile(ctx, proj) {
     const age = proj.age || 0;
     const radius = 20 + age * 80;
     const alpha = 1 - age / 0.3;
-    ctx.strokeStyle = `rgba(100, 160, 255, ${alpha.toFixed(2)})`;
+    ctx.strokeStyle = 'rgba(100, 160, 255, ' + alpha.toFixed(2) + ')';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(Math.round(proj.x), Math.round(proj.y), radius, 0, Math.PI * 2);
@@ -289,8 +343,8 @@ function renderGameOver(ctx) {
   ctx.fillText('GAME OVER', 320, 200);
   ctx.fillStyle = '#ffffff';
   ctx.font = '20px monospace';
-  ctx.fillText(`Wave ${state.wave} / ${state.totalWaves}`, 320, 255);
-  ctx.fillText(`Gold: ${state.gold}`, 320, 285);
+  ctx.fillText('Wave ' + state.wave + ' / ' + state.totalWaves, 320, 255);
+  ctx.fillText('Gold: ' + state.gold, 320, 285);
   ctx.fillStyle = '#aaaaaa';
   ctx.font = '16px monospace';
   ctx.fillText('click to return to menu', 320, 360);
@@ -307,8 +361,8 @@ function renderVictory(ctx) {
 
   ctx.fillStyle = '#ffffff';
   ctx.font = '20px monospace';
-  ctx.fillText(`Lives remaining: ${state.lives} / ${state.mode === 'boss' ? 10 : 20}`, 320, 240);
-  ctx.fillText(`Gold: ${state.gold}`, 320, 270);
+  ctx.fillText('Lives remaining: ' + state.lives + ' / ' + (state.mode === 'boss' ? 10 : 20), 320, 240);
+  ctx.fillText('Gold: ' + state.gold, 320, 270);
 
   if (state.newUnlock) {
     ctx.fillStyle = '#FFD700';

@@ -1,6 +1,7 @@
 import { state, STATES, transitionTo, initGameState, getPath, isGameOver } from './state.js';
 import { flushInput, getSelectedTowerType, setSelectedTowerType } from './input.js';
 import { menuButtons } from './renderer.js';
+import { panelHitTest } from './ui.js';
 import { placeTower, sellTower } from './towers.js';
 import { updateEnemies } from './enemies.js';
 import { updateCombat } from './combat.js';
@@ -23,6 +24,15 @@ export function update(dt) {
           continue;
         }
         if (e.type !== 'click') continue;
+
+        // Check tower panel first
+        if (e.button === 0) {
+          const panelTower = panelHitTest(e.x, e.y);
+          if (panelTower) {
+            setSelectedTowerType(panelTower);
+            continue; // don't place tower
+          }
+        }
 
         // Check Start Wave button click
         if (e.button === 0) {
