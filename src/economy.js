@@ -1,9 +1,15 @@
-export function canAfford(state, cost) {
-  return false;
+import { state } from './state.js';
+
+export function canAfford(cost) {
+  return state.gold >= cost;
 }
 
-export function spend(state, amount) {
+export function spend(amount) {
+  if (state.gold < amount) return false;
+  state.gold -= amount;
+  return true;
 }
 
-export function earn(state, amount) {
+export function earn(amount) {
+  state.gold += amount;
 }
