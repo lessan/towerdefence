@@ -3,6 +3,7 @@ import { update } from './update.js';
 import { render } from './renderer.js';
 import { initInput } from './input.js';
 import { loadUnlocks } from './unlock.js';
+import { loadSprites } from './sprites.js';
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -19,5 +20,6 @@ function loop(timestamp) {
 
 initInput(canvas);
 loadUnlocks();
+loadSprites();
 transitionTo(STATES.MENU);
 requestAnimationFrame(loop);

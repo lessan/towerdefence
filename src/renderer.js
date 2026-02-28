@@ -2,6 +2,7 @@ import { state, STATES, getPath } from './state.js';
 import { getTile, TILE_TYPES } from './grid.js';
 import { getSelectedTowerType } from './input.js';
 import { TOWER_DEFS } from './towers.js';
+import { drawSprite } from './sprites.js';
 
 // Button hit areas exported for input detection
 export const menuButtons = {
@@ -63,57 +64,52 @@ function renderMenu(ctx) {
 }
 
 function renderGame(ctx) {
-  // Background
+  // Layer 0: Background
   ctx.fillStyle = '#3a7d44';
   ctx.fillRect(0, 0, 640, 480);
 
-  // Draw each tile
+  // Layer 1: Tiles
   for (let y = 0; y < 15; y++) {
     for (let x = 0; x < 20; x++) {
       const tile = getTile(state.grid, x, y);
-      if (tile) drawTile(ctx, tile, x, y);
+      if (tile) drawTileSprite(ctx, tile, x, y);
     }
   }
 
-  // Draw path overlay
+  // Layer 2: Path overlay
   const path = getPath();
   if (path) {
     ctx.fillStyle = 'rgba(255, 220, 50, 0.35)';
     for (const node of path) {
       ctx.fillRect(node.x * 32 + 2, node.y * 32 + 2, 28, 28);
     }
-    // Draw spawn and exit markers
+  }
+
+  // Layer 3: Spawn/exit markers
+  if (path) {
     ctx.fillStyle = '#00ff88';
     ctx.fillRect(0 * 32 + 6, 7 * 32 + 6, 20, 20);
     ctx.fillStyle = '#ff4444';
     ctx.fillRect(19 * 32 + 6, 7 * 32 + 6, 20, 20);
   }
 
-  // Draw towers
-  const towerColors = {
-    crossbow:    '#8B4513',
-    brazier:     '#228B22',
-    belltower:   '#4169E1',
-    ballista:    '#696969',
-    lemonadecan: '#FFD700',
-  };
-  for (const tower of state.towers) {
-    const px = tower.tileX * 32;
-    const py = tower.tileY * 32;
-    ctx.fillStyle = towerColors[tower.type] || '#888';
-    ctx.fillRect(px + 2, py + 2, 28, 28);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(tower.type[0].toUpperCase(), px + 16, py + 20);
+  // Layer 4: Tower range preview (WAVE_IDLE only)
+  if (state.current === STATES.WAVE_IDLE) {
+    drawRangePreview(ctx);
   }
 
-  // Draw enemies
+  // Layer 5: Towers
+  for (const tower of state.towers) {
+    ctx.imageSmoothingEnabled = false;
+    drawSprite(ctx, 'tower_' + tower.type, tower.tileX * 32, tower.tileY * 32);
+  }
+
+  // Layer 6: Enemies + HP bars
   for (const enemy of state.enemies) {
     drawEnemy(ctx, enemy);
   }
 
-  // Draw projectiles
+  // Layer 7 & 8: Projectiles (including ring effects)
   for (const proj of state.projectiles) {
     drawProjectile(ctx, proj);
   }
@@ -128,10 +124,10 @@ function renderGame(ctx) {
     ctx.fillText(state.feedback.message, 320, 245);
   }
 
-  // HUD
+  // Layer 9: HUD bar
   renderHUD(ctx);
 
-  // Start Wave button (only in WAVE_IDLE)
+  // Layer 10: Tower panel / Start Wave button (bottom area)
   if (state.current === STATES.WAVE_IDLE) {
     const btnLabel = state.wave === 0
       ? 'Start Wave 1'
@@ -177,52 +173,69 @@ function renderHUD(ctx) {
   ctx.fillText(hint, 340, 18);
 }
 
-function drawTile(ctx, tile, x, y) {
+function drawTileSprite(ctx, tile, x, y) {
   const px = x * 32;
   const py = y * 32;
+  ctx.imageSmoothingEnabled = false;
   switch (tile.type) {
     case TILE_TYPES.GRASS:
-      ctx.fillStyle = '#4a8c50';
-      ctx.fillRect(px, py, 32, 32);
-      // subtle grid line
-      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-      ctx.strokeRect(px, py, 32, 32);
+      drawSprite(ctx, 'tile_grass', px, py);
       break;
     case TILE_TYPES.UNBUILDABLE:
-      // Spawn and exit zones — distinct sandy/stone colour
-      ctx.fillStyle = '#c8a96e';
-      ctx.fillRect(px, py, 32, 32);
-      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-      ctx.strokeRect(px, py, 32, 32);
+      drawSprite(ctx, 'tile_unbuildable', px, py);
       break;
     case TILE_TYPES.TOWER:
-      // Base grass under tower
-      ctx.fillStyle = '#4a8c50';
-      ctx.fillRect(px, py, 32, 32);
+      drawSprite(ctx, 'tile_tower', px, py);
       break;
   }
 }
 
+function drawRangePreview(ctx) {
+  const mx = state.hoverTileX;
+  const my = state.hoverTileY;
+  if (mx === undefined || my === undefined) return;
+
+  const tile = getTile(state.grid, mx, my);
+  if (!tile) return;
+
+  let rangePx = 0;
+  let colour = 'rgba(255,255,255,0.2)';
+
+  if (tile.type === 'GRASS') {
+    // Hovering buildable tile — show selected tower range
+    const def = TOWER_DEFS[getSelectedTowerType()];
+    if (def) rangePx = def.range * 32;
+    colour = 'rgba(100,200,255,0.2)';
+  } else if (tile.type === 'TOWER' && tile.towerRef) {
+    // Hovering placed tower — show its range
+    rangePx = tile.towerRef.range * 32;
+    colour = 'rgba(255,200,100,0.25)';
+  }
+
+  if (rangePx > 0) {
+    const cx = mx * 32 + 16;
+    const cy = my * 32 + 16;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rangePx, 0, Math.PI * 2);
+    ctx.fillStyle = colour;
+    ctx.fill();
+    ctx.strokeStyle = colour.replace('0.2', '0.6').replace('0.25', '0.6');
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
 function drawEnemy(ctx, enemy) {
-  const r = 10;
-  const colours = {
-    goblin:  '#44ff44',
-    orc:     '#228822',
-    troll:   '#885522',
-    lich:    '#aa44ff',
-    ogre:    '#ff6622',
-    wyrm:    '#cc2222',
-    ogrunt:  '#ff9966',
-  };
-  ctx.fillStyle = colours[enemy.type] || '#ffffff';
-  ctx.beginPath();
-  ctx.arc(Math.round(enemy.x), Math.round(enemy.y), r, 0, Math.PI * 2);
-  ctx.fill();
+  // Draw sprite centred on enemy position
+  ctx.imageSmoothingEnabled = false;
+  drawSprite(ctx, 'enemy_' + enemy.type, Math.round(enemy.x) - 16, Math.round(enemy.y) - 16);
 
   // Armour indicator (Wyrm) — grey outline
   if (enemy.special === 'armour') {
     ctx.strokeStyle = '#aaaaaa';
     ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(Math.round(enemy.x), Math.round(enemy.y), 13, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -231,16 +244,16 @@ function drawEnemy(ctx, enemy) {
     ctx.strokeStyle = 'rgba(100,150,255,0.7)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(Math.round(enemy.x), Math.round(enemy.y), r + 3, 0, Math.PI * 2);
+    ctx.arc(Math.round(enemy.x), Math.round(enemy.y), 16, 0, Math.PI * 2);
     ctx.stroke();
   }
 
-  // HP bar (only show when damaged)
+  // HP bar above the sprite (only show when damaged)
   if (enemy.hp < enemy.maxHp) {
     const barW = 24;
     const barH = 4;
     const bx = Math.round(enemy.x) - barW / 2;
-    const by = Math.round(enemy.y) - r - 8;
+    const by = Math.round(enemy.y) - 16 - 6;
     ctx.fillStyle = '#550000';
     ctx.fillRect(bx, by, barW, barH);
     ctx.fillStyle = '#ff3333';
@@ -249,8 +262,8 @@ function drawEnemy(ctx, enemy) {
 }
 
 function drawProjectile(ctx, proj) {
+  // Layer 8: Ring projectile (Bell Tower expanding arc) — no sprite
   if (proj.kind === 'ring') {
-    // Expanding ring (Bell Tower visual)
     const age = proj.age || 0;
     const radius = 20 + age * 80;
     const alpha = 1 - age / 0.3;
@@ -262,19 +275,9 @@ function drawProjectile(ctx, proj) {
     return;
   }
 
-  // Travelling projectile
-  const colours = {
-    crossbow:    '#ffff88',
-    brazier:     '#88ff44',
-    belltower:   '#88aaff',
-    ballista:    '#ffcc44',
-    lemonadecan: '#ffff00',
-  };
-  const r = proj.kind === 'splash' ? 5 : 3;
-  ctx.fillStyle = colours[proj.towerType] || '#ffffff';
-  ctx.beginPath();
-  ctx.arc(Math.round(proj.x), Math.round(proj.y), r, 0, Math.PI * 2);
-  ctx.fill();
+  // Layer 7: Travelling projectile sprite
+  ctx.imageSmoothingEnabled = false;
+  drawSprite(ctx, 'proj_' + proj.towerType, Math.round(proj.x) - 6, Math.round(proj.y) - 6);
 }
 
 function renderGameOver(ctx) {

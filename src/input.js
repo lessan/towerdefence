@@ -21,6 +21,12 @@ export function initInput(canvas) {
     inputQueue.push({ type: 'click', x, y, button: 2 });
   });
 
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    state.hoverTileX = Math.floor((e.clientX - rect.left) / (rect.width / 640) / 32);
+    state.hoverTileY = Math.floor((e.clientY - rect.top) / (rect.height / 480) / 32);
+  });
+
   window.addEventListener('keydown', (e) => {
     inputQueue.push({ type: 'keydown', key: e.key });
   });

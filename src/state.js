@@ -30,6 +30,8 @@ export const state = {
   gridDirty: false,
   feedback: null,
   newUnlock: false,
+  hoverTileX: undefined,
+  hoverTileY: undefined,
 };
 
 export function transitionTo(newState) {
