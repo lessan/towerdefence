@@ -46,7 +46,7 @@
 
 ## 4. Towers
 
-All towers are placed on a single grid cell. Towers cannot be sold in v1.
+All towers are placed on a single grid cell. Towers can be sold for **80% of their original gold cost** (rounded down). Selling is instant and returns the cell to buildable status — A* is re-validated after a sell.
 
 ### 4.1 Tower Stats
 
@@ -197,7 +197,7 @@ Player starts with 400 gold (more starting gold because boss enemies are expensi
 
 ### Economy Notes
 - No wave-completion bonus in v1. All income comes from kills.
-- No selling towers in v1. Placement is permanent.
+- Towers can be sold for 80% of their original cost (rounded down). Right-click a placed tower to sell it.
 - No interest or passive income mechanics.
 - Estimated total gold from regular mode (all kills): approximately 1,300g — enough for a varied but not complete tower loadout, forcing strategic choices.
 
@@ -207,7 +207,7 @@ Player starts with 400 gold (more starting gold because boss enemies are expensi
 
 ### Lemonade Can Unlock Flow
 
-1. Player completes wave 10 of regular mode (all enemies in wave 10 killed, none reach exit).
+1. Player completes wave 10 of regular mode having lost **no more than 10 lives** (i.e. at least 10 lives remaining out of 20 when wave 10 clears).
 2. Game sets `localStorage` key: `td_lemonade_unlocked = "true"`.
 3. An unlock popup appears: a pixel-art Lemonade Can drops from the top of the screen, lands with a bounce, and a text banner reads **"SECRET UNLOCKED: The Lemonade Can!"** with a fizzy particle effect. The popup auto-dismisses after 3 seconds or on click.
 4. On every subsequent game load, the game checks `localStorage` for `td_lemonade_unlocked`. If `"true"`, the Lemonade Can appears as a 5th option in the tower build panel with a sparkle indicator.
