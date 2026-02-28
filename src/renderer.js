@@ -1,5 +1,7 @@
 import { state, STATES, getPath } from './state.js';
 import { getTile, TILE_TYPES } from './grid.js';
+import { getSelectedTowerType } from './input.js';
+import { TOWER_DEFS } from './towers.js';
 
 // Button hit areas exported for input detection
 export const menuButtons = {
@@ -78,6 +80,56 @@ function renderGame(ctx) {
     ctx.fillStyle = '#ff4444';
     ctx.fillRect(19 * 32 + 6, 7 * 32 + 6, 20, 20);
   }
+
+  // Draw towers
+  const towerColors = {
+    crossbow:    '#8B4513',
+    brazier:     '#228B22',
+    belltower:   '#4169E1',
+    ballista:    '#696969',
+    lemonadecan: '#FFD700',
+  };
+  for (const tower of state.towers) {
+    const px = tower.tileX * 32;
+    const py = tower.tileY * 32;
+    ctx.fillStyle = towerColors[tower.type] || '#888';
+    ctx.fillRect(px + 2, py + 2, 28, 28);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(tower.type[0].toUpperCase(), px + 16, py + 20);
+  }
+
+  // Draw feedback message
+  if (state.feedback) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(220, 220, 200, 40);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.feedback.message, 320, 245);
+  }
+
+  // HUD
+  renderHUD(ctx);
+}
+
+function renderHUD(ctx) {
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(0, 0, 640, 28);
+  ctx.fillStyle = '#FFD700';
+  ctx.font = '14px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Gold: ${state.gold}`, 8, 18);
+  ctx.fillStyle = '#ff6666';
+  ctx.fillText(`Lives: ${state.lives}`, 120, 18);
+  ctx.fillStyle = '#aaffaa';
+  ctx.fillText(`Wave: ${state.wave}/${state.totalWaves}`, 220, 18);
+  ctx.fillStyle = '#ffffff';
+  const selected = getSelectedTowerType();
+  const def = TOWER_DEFS[selected];
+  const label = def ? `${def.name} (${def.cost}g)` : selected;
+  ctx.fillText(`[1-4] ${label}  [R-click] sell`, 340, 18);
 }
 
 function drawTile(ctx, tile, x, y) {
@@ -99,11 +151,9 @@ function drawTile(ctx, tile, x, y) {
       ctx.strokeRect(px, py, 32, 32);
       break;
     case TILE_TYPES.TOWER:
-      // Placeholder tower — dark grey square with a lighter inner square
+      // Base grass under tower
       ctx.fillStyle = '#4a8c50';
       ctx.fillRect(px, py, 32, 32);
-      ctx.fillStyle = '#555566';
-      ctx.fillRect(px + 4, py + 4, 24, 24);
       break;
   }
 }

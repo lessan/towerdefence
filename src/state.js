@@ -24,6 +24,7 @@ export const state = {
   unlocks: { lemonadecan: false },
   pathCache: null,
   gridDirty: false,
+  feedback: null,
 };
 
 export function transitionTo(newState) {

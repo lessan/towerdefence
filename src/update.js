@@ -1,15 +1,47 @@
 import { state, STATES, transitionTo, initGameState, getPath } from './state.js';
-import { flushInput } from './input.js';
+import { flushInput, getSelectedTowerType, setSelectedTowerType } from './input.js';
 import { menuButtons } from './renderer.js';
+import { placeTower, sellTower } from './towers.js';
 
 export function update(dt) {
   switch (state.current) {
     case STATES.MENU:
       updateMenu();
       break;
-    case STATES.WAVE_IDLE:
-      getPath();
+    case STATES.WAVE_IDLE: {
+      getPath(); // keep cache fresh
+      const events = flushInput();
+      for (const e of events) {
+        if (e.type === 'keydown') {
+          const keyMap = { '1': 'crossbow', '2': 'brazier', '3': 'belltower', '4': 'ballista' };
+          if (keyMap[e.key]) setSelectedTowerType(keyMap[e.key]);
+          if (e.key === '5' && state.unlocks.lemonadecan) setSelectedTowerType('lemonadecan');
+          continue;
+        }
+        if (e.type !== 'click') continue;
+        const tileX = Math.floor(e.x / 32);
+        const tileY = Math.floor(e.y / 32);
+        if (e.button === 0) {
+          // Left click — place tower
+          const result = placeTower(tileX, tileY, getSelectedTowerType());
+          if (!result.success) {
+            state.feedback = { message: result.reason, timer: 1.5 };
+          }
+        } else if (e.button === 2) {
+          // Right click — sell tower
+          const result = sellTower(tileX, tileY);
+          if (result.success) {
+            state.feedback = { message: `+${result.refund}g`, timer: 1.0 };
+          }
+        }
+      }
+      // Tick feedback timer
+      if (state.feedback) {
+        state.feedback.timer -= dt;
+        if (state.feedback.timer <= 0) state.feedback = null;
+      }
       break;
+    }
     case STATES.WAVE_RUNNING: break;
     case STATES.GAME_OVER: break;
     case STATES.VICTORY: break;
