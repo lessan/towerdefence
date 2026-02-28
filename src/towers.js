@@ -24,7 +24,7 @@ export const TOWER_DEFS = {
   },
   belltower: {
     name: "Herald's Bell Tower",
-    damage: 20,
+    damage: 15,
     range: 2.5,
     fireRate: 1.0,
     cost: 100,

@@ -124,7 +124,9 @@ function spawnRuntsAt(parentEnemy) {
     if (runt) {
       runt.x = parentEnemy.x;
       runt.y = parentEnemy.y;
-      runt.pathIndex = parentEnemy.pathIndex;
+      // Use parent's path copy and clamp pathIndex to valid range
+      runt.path = parentEnemy.path.slice();
+      runt.pathIndex = Math.min(parentEnemy.pathIndex, runt.path.length - 1);
     }
   }
 }

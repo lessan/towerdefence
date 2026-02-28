@@ -30,12 +30,16 @@ export const state = {
   gridDirty: false,
   feedback: null,
   newUnlock: false,
+  unlockChecked: false,
   hoverTileX: undefined,
   hoverTileY: undefined,
+  turboMode: false,
+  autoProceed: false,
+  mouseX: 0,
+  mouseY: 0,
 };
 
 export function transitionTo(newState) {
-  console.log(`[state] ${state.current} → ${newState}`);
   state.current = newState;
 }
 
@@ -53,6 +57,7 @@ export function initGameState(mode) {
   state.pathCache = null;
   state.gridDirty = true;
   state.newUnlock = false;
+  state.unlockChecked = false;
 }
 
 // Call after any grid change. Recomputes path and caches it.

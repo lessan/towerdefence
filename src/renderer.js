@@ -3,7 +3,7 @@ import { getTile, TILE_TYPES } from './grid.js';
 import { getSelectedTowerType } from './input.js';
 import { TOWER_DEFS } from './towers.js';
 import { drawSprite } from './sprites.js';
-import { renderTowerPanel } from './ui.js';
+import { renderSidebar } from './ui.js';
 
 // Button hit areas exported for input detection
 export const menuButtons = {
@@ -12,7 +12,7 @@ export const menuButtons = {
 };
 
 export function render(ctx) {
-  ctx.clearRect(0, 0, 640, 480);
+  ctx.clearRect(0, 0, 900, 480);
   switch (state.current) {
     case STATES.MENU:
       renderMenu(ctx);
@@ -34,9 +34,9 @@ export function render(ctx) {
 function renderMenu(ctx) {
   // Dark starry background
   ctx.fillStyle = '#0d0d1f';
-  ctx.fillRect(0, 0, 640, 480);
+  ctx.fillRect(0, 0, 900, 480);
 
-  // Decorative pixel-art style border
+  // Decorative pixel-art style border (game area only)
   ctx.strokeStyle = '#554488';
   ctx.lineWidth = 3;
   ctx.strokeRect(12, 12, 616, 456);
@@ -44,7 +44,7 @@ function renderMenu(ctx) {
   ctx.lineWidth = 1;
   ctx.strokeRect(18, 18, 604, 444);
 
-  // Title
+  // Title (centred on game area at x=320)
   ctx.fillStyle = '#FFD700';
   ctx.font = 'bold 52px monospace';
   ctx.textAlign = 'center';
@@ -132,6 +132,21 @@ function renderGame(ctx) {
     drawRangePreview(ctx);
   }
 
+  // Placement ghost (WAVE_IDLE only)
+  if (state.current === STATES.WAVE_IDLE) {
+    const tx = state.hoverTileX;
+    const ty = state.hoverTileY;
+    if (tx >= 0 && tx < 20 && ty >= 0 && ty < 15) {
+      const tile = getTile(state.grid, tx, ty);
+      if (tile && tile.type === 'GRASS') {
+        ctx.globalAlpha = 0.45;
+        ctx.imageSmoothingEnabled = false;
+        drawSprite(ctx, 'tower_' + getSelectedTowerType(), tx * 32, ty * 32);
+        ctx.globalAlpha = 1.0;
+      }
+    }
+  }
+
   // Layer 5: Towers
   for (const tower of state.towers) {
     ctx.imageSmoothingEnabled = false;
@@ -161,28 +176,24 @@ function renderGame(ctx) {
   // Layer 9: HUD bar
   renderHUD(ctx);
 
-  // Layer 10: Tower panel (bottom area)
-  if (state.current === STATES.WAVE_IDLE || state.current === STATES.WAVE_RUNNING) {
-    renderTowerPanel(ctx);
-  }
-
-  // Start Wave button (drawn on top of panel area)
-  if (state.current === STATES.WAVE_IDLE) {
-    const btnLabel = state.wave === 0
-      ? 'Start Wave 1'
-      : state.waveIdleTimer > 0
-        ? 'Next wave in ' + Math.ceil(state.waveIdleTimer) + 's'
-        : 'Send Wave ' + (state.wave + 1);
-
-    ctx.fillStyle = state.waveIdleTimer > 0 ? '#555566' : '#4a7c59';
-    ctx.fillRect(440, 450, 190, 28);
-    ctx.strokeStyle = '#6a9c79';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(440, 450, 190, 28);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(btnLabel, 535, 469);
+  // Custom cursor — tower icon following mouse (game area only)
+  if (state.mouseX > 0 && state.mouseX < 640 && state.current === STATES.WAVE_IDLE) {
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = 0.9;
+    drawSprite(ctx, 'tower_' + getSelectedTowerType(), Math.round(state.mouseX) - 8, Math.round(state.mouseY) - 8);
+    ctx.globalAlpha = 1.0;
+  } else {
+    // Default crosshair cursor in game area during WAVE_RUNNING
+    if (state.mouseX < 640) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(Math.round(state.mouseX) - 6, Math.round(state.mouseY));
+      ctx.lineTo(Math.round(state.mouseX) + 6, Math.round(state.mouseY));
+      ctx.moveTo(Math.round(state.mouseX), Math.round(state.mouseY) - 6);
+      ctx.lineTo(Math.round(state.mouseX), Math.round(state.mouseY) + 6);
+      ctx.stroke();
+    }
   }
 
   // Wave message banner (WAVE_RUNNING only)
@@ -336,7 +347,7 @@ function drawProjectile(ctx, proj) {
 
 function renderGameOver(ctx) {
   ctx.fillStyle = 'rgba(0,0,0,0.72)';
-  ctx.fillRect(0, 0, 640, 480);
+  ctx.fillRect(0, 0, 900, 480);
   ctx.fillStyle = '#ff4444';
   ctx.font = 'bold 48px monospace';
   ctx.textAlign = 'center';
@@ -352,7 +363,7 @@ function renderGameOver(ctx) {
 
 function renderVictory(ctx) {
   ctx.fillStyle = 'rgba(0,0,0,0.72)';
-  ctx.fillRect(0, 0, 640, 480);
+  ctx.fillRect(0, 0, 900, 480);
 
   ctx.fillStyle = '#FFD700';
   ctx.font = 'bold 48px monospace';

@@ -1,7 +1,7 @@
 import { state, STATES, transitionTo, initGameState, getPath, isGameOver } from './state.js';
 import { flushInput, getSelectedTowerType, setSelectedTowerType } from './input.js';
 import { menuButtons } from './renderer.js';
-import { panelHitTest } from './ui.js';
+import { sidebarHitTest } from './ui.js';
 import { placeTower, sellTower } from './towers.js';
 import { updateEnemies } from './enemies.js';
 import { updateCombat } from './combat.js';
@@ -15,54 +15,43 @@ export function update(dt) {
       break;
     case STATES.WAVE_IDLE: {
       getPath(); // keep cache fresh
+
+      // Auto-proceed countdown (only if autoProceed is ON and not first wave)
+      if (state.autoProceed && state.wave > 0 && state.wave < state.totalWaves) {
+        state.waveIdleTimer -= dt;
+        if (state.waveIdleTimer <= 0) {
+          startWave();
+          break;
+        }
+      }
+
       const events = flushInput();
       for (const e of events) {
-        if (e.type === 'keydown') {
+        // Panel clicks (sidebar area x >= 640)
+        if (e.type === 'click' && e.button === 0) {
+          const sidebarAction = sidebarHitTest(e.x, e.y);
+          if (sidebarAction) {
+            handleSidebarAction(sidebarAction);
+            continue;
+          }
+          // Tower placement (only in game grid area x < 640)
+          if (e.x < 640) {
+            const tileX = Math.floor(e.x / 32);
+            const tileY = Math.floor(e.y / 32);
+            const result = placeTower(tileX, tileY, getSelectedTowerType());
+            if (!result.success) state.feedback = { message: result.reason, timer: 1.5 };
+          }
+        } else if (e.type === 'click' && e.button === 2 && e.x < 640) {
+          const tileX = Math.floor(e.x / 32);
+          const tileY = Math.floor(e.y / 32);
+          const result = sellTower(tileX, tileY);
+          if (result.success) state.feedback = { message: `+${result.refund}g`, timer: 1.0 };
+        } else if (e.type === 'keydown') {
           const keyMap = { '1': 'crossbow', '2': 'brazier', '3': 'belltower', '4': 'ballista' };
           if (keyMap[e.key]) setSelectedTowerType(keyMap[e.key]);
           if (e.key === '5' && state.unlocks.lemonadecan) setSelectedTowerType('lemonadecan');
-          continue;
+          if (e.key === 't' || e.key === 'T') state.turboMode = !state.turboMode;
         }
-        if (e.type !== 'click') continue;
-
-        // Check tower panel first
-        if (e.button === 0) {
-          const panelTower = panelHitTest(e.x, e.y);
-          if (panelTower) {
-            setSelectedTowerType(panelTower);
-            continue; // don't place tower
-          }
-        }
-
-        // Check Start Wave button click
-        if (e.button === 0) {
-          if (e.x >= 440 && e.x <= 630 && e.y >= 450 && e.y <= 478) {
-            if (state.waveIdleTimer <= 0 && state.wave < state.totalWaves) {
-              startWave();
-              continue; // skip tower placement for this click
-            }
-          }
-        }
-
-        const tileX = Math.floor(e.x / 32);
-        const tileY = Math.floor(e.y / 32);
-        if (e.button === 0) {
-          // Left click — place tower
-          const result = placeTower(tileX, tileY, getSelectedTowerType());
-          if (!result.success) {
-            state.feedback = { message: result.reason, timer: 1.5 };
-          }
-        } else if (e.button === 2) {
-          // Right click — sell tower
-          const result = sellTower(tileX, tileY);
-          if (result.success) {
-            state.feedback = { message: `+${result.refund}g`, timer: 1.0 };
-          }
-        }
-      }
-      // Auto-countdown between waves (not first wave)
-      if (state.wave > 0 && state.waveIdleTimer > 0) {
-        state.waveIdleTimer -= dt;
       }
       // Tick feedback timer
       if (state.feedback) {
@@ -71,16 +60,27 @@ export function update(dt) {
       }
       break;
     }
-    case STATES.WAVE_RUNNING:
+    case STATES.WAVE_RUNNING: {
       updateEnemies(dt);
       updateCombat(dt);
       updateWaveSpawner(dt);
-      if (isGameOver()) {
-        transitionTo(STATES.GAME_OVER);
+      if (isGameOver()) transitionTo(STATES.GAME_OVER);
+      const events = flushInput();
+      for (const e of events) {
+        if (e.type === 'click' && e.button === 0) {
+          const sidebarAction = sidebarHitTest(e.x, e.y);
+          if (sidebarAction) handleSidebarAction(sidebarAction);
+        } else if (e.type === 'keydown') {
+          if (e.key === 't' || e.key === 'T') state.turboMode = !state.turboMode;
+        }
       }
       break;
+    }
     case STATES.VICTORY: {
-      if (!state.newUnlock) checkUnlock();
+      if (!state.unlockChecked) {
+        state.unlockChecked = true;
+        checkUnlock();
+      }
       const events = flushInput();
       for (const e of events) {
         if (e.type === 'click') transitionTo(STATES.MENU);
@@ -94,6 +94,29 @@ export function update(dt) {
       }
       break;
     }
+  }
+}
+
+function handleSidebarAction(action) {
+  switch (action) {
+    case 'menu': transitionTo(STATES.MENU); break;
+    case 'turbo': state.turboMode = !state.turboMode; break;
+    case 'autoproceed':
+      state.autoProceed = !state.autoProceed;
+      if (state.autoProceed && state.waveIdleTimer <= 0) state.waveIdleTimer = 5;
+      break;
+    case 'startwave':
+      if (state.current === STATES.WAVE_IDLE && state.wave < state.totalWaves) {
+        startWave();
+      }
+      break;
+    default:
+      // Tower selection
+      if (action.startsWith('tower:')) {
+        const type = action.split(':')[1];
+        if (type === 'lemonadecan' && !state.unlocks.lemonadecan) break;
+        setSelectedTowerType(type);
+      }
   }
 }
 
