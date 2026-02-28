@@ -74,7 +74,7 @@ export function placeTower(tileX, tileY, type) {
     tileX,
     tileY,
     ...def,
-    lastFired: 0,
+    lastFired: 1 / def.fireRate, // start ready to fire immediately
   };
   const tile = getTile(state.grid, tileX, tileY);
   tile.towerRef = tower;

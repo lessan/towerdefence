@@ -105,6 +105,11 @@ function renderGame(ctx) {
     drawEnemy(ctx, enemy);
   }
 
+  // Draw projectiles
+  for (const proj of state.projectiles) {
+    drawProjectile(ctx, proj);
+  }
+
   // Draw feedback message
   if (state.feedback) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -232,4 +237,33 @@ function drawEnemy(ctx, enemy) {
     ctx.fillStyle = '#ff3333';
     ctx.fillRect(bx, by, Math.round(barW * (enemy.hp / enemy.maxHp)), barH);
   }
+}
+
+function drawProjectile(ctx, proj) {
+  if (proj.kind === 'ring') {
+    // Expanding ring (Bell Tower visual)
+    const age = proj.age || 0;
+    const radius = 20 + age * 80;
+    const alpha = 1 - age / 0.3;
+    ctx.strokeStyle = `rgba(100, 160, 255, ${alpha.toFixed(2)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(Math.round(proj.x), Math.round(proj.y), radius, 0, Math.PI * 2);
+    ctx.stroke();
+    return;
+  }
+
+  // Travelling projectile
+  const colours = {
+    crossbow:    '#ffff88',
+    brazier:     '#88ff44',
+    belltower:   '#88aaff',
+    ballista:    '#ffcc44',
+    lemonadecan: '#ffff00',
+  };
+  const r = proj.kind === 'splash' ? 5 : 3;
+  ctx.fillStyle = colours[proj.towerType] || '#ffffff';
+  ctx.beginPath();
+  ctx.arc(Math.round(proj.x), Math.round(proj.y), r, 0, Math.PI * 2);
+  ctx.fill();
 }

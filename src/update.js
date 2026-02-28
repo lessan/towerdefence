@@ -3,6 +3,7 @@ import { flushInput, getSelectedTowerType, setSelectedTowerType } from './input.
 import { menuButtons } from './renderer.js';
 import { placeTower, sellTower } from './towers.js';
 import { updateEnemies } from './enemies.js';
+import { updateCombat } from './combat.js';
 import { updateWaveSpawner, startWave } from './waves.js';
 
 export function update(dt) {
@@ -61,6 +62,7 @@ export function update(dt) {
     }
     case STATES.WAVE_RUNNING:
       updateEnemies(dt);
+      updateCombat(dt);
       updateWaveSpawner(dt);
       break;
     case STATES.GAME_OVER: break;
