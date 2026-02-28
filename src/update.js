@@ -2,6 +2,7 @@ import { state, STATES, transitionTo, initGameState, getPath } from './state.js'
 import { flushInput, getSelectedTowerType, setSelectedTowerType } from './input.js';
 import { menuButtons } from './renderer.js';
 import { placeTower, sellTower } from './towers.js';
+import { updateEnemies } from './enemies.js';
 
 export function update(dt) {
   switch (state.current) {
@@ -42,7 +43,9 @@ export function update(dt) {
       }
       break;
     }
-    case STATES.WAVE_RUNNING: break;
+    case STATES.WAVE_RUNNING:
+      updateEnemies(dt);
+      break;
     case STATES.GAME_OVER: break;
     case STATES.VICTORY: break;
   }

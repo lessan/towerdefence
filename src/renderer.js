@@ -100,6 +100,11 @@ function renderGame(ctx) {
     ctx.fillText(tower.type[0].toUpperCase(), px + 16, py + 20);
   }
 
+  // Draw enemies
+  for (const enemy of state.enemies) {
+    drawEnemy(ctx, enemy);
+  }
+
   // Draw feedback message
   if (state.feedback) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -155,5 +160,50 @@ function drawTile(ctx, tile, x, y) {
       ctx.fillStyle = '#4a8c50';
       ctx.fillRect(px, py, 32, 32);
       break;
+  }
+}
+
+function drawEnemy(ctx, enemy) {
+  const r = 10;
+  const colours = {
+    goblin:  '#44ff44',
+    orc:     '#228822',
+    troll:   '#885522',
+    lich:    '#aa44ff',
+    ogre:    '#ff6622',
+    wyrm:    '#cc2222',
+    ogrunt:  '#ff9966',
+  };
+  ctx.fillStyle = colours[enemy.type] || '#ffffff';
+  ctx.beginPath();
+  ctx.arc(Math.round(enemy.x), Math.round(enemy.y), r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Armour indicator (Wyrm) — grey outline
+  if (enemy.special === 'armour') {
+    ctx.strokeStyle = '#aaaaaa';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  // Slow indicator — blue tint ring
+  if (enemy.slowTimer > 0) {
+    ctx.strokeStyle = 'rgba(100,150,255,0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(Math.round(enemy.x), Math.round(enemy.y), r + 3, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // HP bar (only show when damaged)
+  if (enemy.hp < enemy.maxHp) {
+    const barW = 24;
+    const barH = 4;
+    const bx = Math.round(enemy.x) - barW / 2;
+    const by = Math.round(enemy.y) - r - 8;
+    ctx.fillStyle = '#550000';
+    ctx.fillRect(bx, by, barW, barH);
+    ctx.fillStyle = '#ff3333';
+    ctx.fillRect(bx, by, Math.round(barW * (enemy.hp / enemy.maxHp)), barH);
   }
 }
