@@ -1,4 +1,5 @@
 import { createGrid } from './grid.js';
+import { findPath } from './pathfinding.js';
 
 export const STATES = {
   MENU: 'MENU',
@@ -43,4 +44,20 @@ export function initGameState(mode) {
   state.spawnQueue = [];
   state.pathCache = null;
   state.gridDirty = true;
+}
+
+// Call after any grid change. Recomputes path and caches it.
+// Returns the new path (array of {x,y}) or null if blocked.
+export function refreshPath() {
+  const SPAWN = { x: 0, y: 7 };
+  const EXIT  = { x: 19, y: 7 };
+  state.pathCache = findPath(state.grid, SPAWN, EXIT);
+  state.gridDirty = false;
+  return state.pathCache;
+}
+
+// Returns cached path, refreshing if dirty.
+export function getPath() {
+  if (state.gridDirty || !state.pathCache) refreshPath();
+  return state.pathCache;
 }

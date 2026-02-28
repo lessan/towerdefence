@@ -1,4 +1,4 @@
-import { state, STATES } from './state.js';
+import { state, STATES, getPath } from './state.js';
 import { getTile, TILE_TYPES } from './grid.js';
 
 // Button hit areas exported for input detection
@@ -63,6 +63,20 @@ function renderGame(ctx) {
       const tile = getTile(state.grid, x, y);
       if (tile) drawTile(ctx, tile, x, y);
     }
+  }
+
+  // Draw path overlay
+  const path = getPath();
+  if (path) {
+    ctx.fillStyle = 'rgba(255, 220, 50, 0.35)';
+    for (const node of path) {
+      ctx.fillRect(node.x * 32 + 2, node.y * 32 + 2, 28, 28);
+    }
+    // Draw spawn and exit markers
+    ctx.fillStyle = '#00ff88';
+    ctx.fillRect(0 * 32 + 6, 7 * 32 + 6, 20, 20);
+    ctx.fillStyle = '#ff4444';
+    ctx.fillRect(19 * 32 + 6, 7 * 32 + 6, 20, 20);
   }
 }
 
