@@ -3,6 +3,7 @@ import { flushInput, getSelectedTowerType, setSelectedTowerType } from './input.
 import { menuButtons } from './renderer.js';
 import { placeTower, sellTower } from './towers.js';
 import { updateEnemies } from './enemies.js';
+import { updateWaveSpawner, startWave } from './waves.js';
 
 export function update(dt) {
   switch (state.current) {
@@ -20,6 +21,17 @@ export function update(dt) {
           continue;
         }
         if (e.type !== 'click') continue;
+
+        // Check Start Wave button click
+        if (e.button === 0) {
+          if (e.x >= 440 && e.x <= 630 && e.y >= 450 && e.y <= 478) {
+            if (state.waveIdleTimer <= 0 && state.wave < state.totalWaves) {
+              startWave();
+              continue; // skip tower placement for this click
+            }
+          }
+        }
+
         const tileX = Math.floor(e.x / 32);
         const tileY = Math.floor(e.y / 32);
         if (e.button === 0) {
@@ -36,6 +48,10 @@ export function update(dt) {
           }
         }
       }
+      // Auto-countdown between waves (not first wave)
+      if (state.wave > 0 && state.waveIdleTimer > 0) {
+        state.waveIdleTimer -= dt;
+      }
       // Tick feedback timer
       if (state.feedback) {
         state.feedback.timer -= dt;
@@ -45,6 +61,7 @@ export function update(dt) {
     }
     case STATES.WAVE_RUNNING:
       updateEnemies(dt);
+      updateWaveSpawner(dt);
       break;
     case STATES.GAME_OVER: break;
     case STATES.VICTORY: break;

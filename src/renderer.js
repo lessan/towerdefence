@@ -117,6 +117,32 @@ function renderGame(ctx) {
 
   // HUD
   renderHUD(ctx);
+
+  // Start Wave button (only in WAVE_IDLE)
+  if (state.current === STATES.WAVE_IDLE) {
+    const btnLabel = state.wave === 0
+      ? 'Start Wave 1'
+      : state.waveIdleTimer > 0
+        ? `Next wave in ${Math.ceil(state.waveIdleTimer)}s`
+        : `Send Wave ${state.wave + 1}`;
+
+    ctx.fillStyle = state.waveIdleTimer > 0 ? '#555566' : '#4a7c59';
+    ctx.fillRect(440, 450, 190, 28);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(btnLabel, 535, 469);
+  }
+
+  // Wave message banner (WAVE_RUNNING only)
+  if (state.waveMessage) {
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(160, 210, 320, 40);
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 20px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.waveMessage, 320, 237);
+  }
 }
 
 function renderHUD(ctx) {
