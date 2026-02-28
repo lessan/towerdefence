@@ -29,6 +29,7 @@ export const state = {
   pathCache: null,
   gridDirty: false,
   feedback: null,
+  newUnlock: false,
 };
 
 export function transitionTo(newState) {
@@ -49,6 +50,7 @@ export function initGameState(mode) {
   state.spawnQueue = [];
   state.pathCache = null;
   state.gridDirty = true;
+  state.newUnlock = false;
 }
 
 // Call after any grid change. Recomputes path and caches it.
@@ -59,6 +61,10 @@ export function refreshPath() {
   state.pathCache = findPath(state.grid, SPAWN, EXIT);
   state.gridDirty = false;
   return state.pathCache;
+}
+
+export function isGameOver() {
+  return state.lives <= 0;
 }
 
 // Returns cached path, refreshing if dirty.

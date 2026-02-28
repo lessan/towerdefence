@@ -15,6 +15,14 @@ export function render(ctx) {
     case STATES.MENU:
       renderMenu(ctx);
       break;
+    case STATES.GAME_OVER:
+      renderGame(ctx);
+      renderGameOver(ctx);
+      break;
+    case STATES.VICTORY:
+      renderGame(ctx);
+      renderVictory(ctx);
+      break;
     default:
       renderGame(ctx);
       break;
@@ -165,7 +173,8 @@ function renderHUD(ctx) {
   const selected = getSelectedTowerType();
   const def = TOWER_DEFS[selected];
   const label = def ? `${def.name} (${def.cost}g)` : selected;
-  ctx.fillText(`[1-4] ${label}  [R-click] sell`, 340, 18);
+  const hint = state.unlocks.lemonadecan ? `[1-5] ${label}  [R-click] sell` : `[1-4] ${label}  [R-click] sell`;
+  ctx.fillText(hint, 340, 18);
 }
 
 function drawTile(ctx, tile, x, y) {
@@ -266,4 +275,48 @@ function drawProjectile(ctx, proj) {
   ctx.beginPath();
   ctx.arc(Math.round(proj.x), Math.round(proj.y), r, 0, Math.PI * 2);
   ctx.fill();
+}
+
+function renderGameOver(ctx) {
+  ctx.fillStyle = 'rgba(0,0,0,0.72)';
+  ctx.fillRect(0, 0, 640, 480);
+  ctx.fillStyle = '#ff4444';
+  ctx.font = 'bold 48px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('GAME OVER', 320, 200);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '20px monospace';
+  ctx.fillText(`Wave ${state.wave} / ${state.totalWaves}`, 320, 255);
+  ctx.fillText(`Gold: ${state.gold}`, 320, 285);
+  ctx.fillStyle = '#aaaaaa';
+  ctx.font = '16px monospace';
+  ctx.fillText('click to return to menu', 320, 360);
+}
+
+function renderVictory(ctx) {
+  ctx.fillStyle = 'rgba(0,0,0,0.72)';
+  ctx.fillRect(0, 0, 640, 480);
+
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 48px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('VICTORY!', 320, 180);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '20px monospace';
+  ctx.fillText(`Lives remaining: ${state.lives} / ${state.mode === 'boss' ? 10 : 20}`, 320, 240);
+  ctx.fillText(`Gold: ${state.gold}`, 320, 270);
+
+  if (state.newUnlock) {
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 22px monospace';
+    ctx.fillText('SECRET UNLOCKED: The Lemonade Can!', 320, 330);
+    ctx.fillStyle = '#ffff88';
+    ctx.font = '15px monospace';
+    ctx.fillText('Key [5] now available in future games', 320, 358);
+  }
+
+  ctx.fillStyle = '#aaaaaa';
+  ctx.font = '16px monospace';
+  ctx.fillText('click to return to menu', 320, 420);
 }
