@@ -205,6 +205,11 @@ function renderGame(ctx) {
     ctx.textAlign = 'center';
     ctx.fillText(state.waveMessage, 320, 237);
   }
+
+  // Layer 10: Sidebar
+  if (state.current === STATES.WAVE_IDLE || state.current === STATES.WAVE_RUNNING) {
+    renderSidebar(ctx);
+  }
 }
 
 function renderHUD(ctx) {
@@ -235,6 +240,14 @@ function renderHUD(ctx) {
     ctx.fillStyle = '#ccccff';
     ctx.textAlign = 'right';
     ctx.fillText('\u25B8 ' + def.name + ' (' + def.cost + 'g)', 632, 17);
+  }
+
+  // Turbo indicator (right side, in sidebar HUD area)
+  if (state.turboMode) {
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('\u26A1x2', 892, 17);
   }
 }
 

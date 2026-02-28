@@ -21,13 +21,14 @@ body {
   display: block;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  cursor: none;
 }
 
 #ui-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  width: 640px;
+  width: 900px;
   height: 480px;
   pointer-events: none;
 }

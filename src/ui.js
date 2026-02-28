@@ -1,116 +1,218 @@
-import { state } from './state.js';
+import { state, STATES } from './state.js';
 import { TOWER_DEFS } from './towers.js';
 import { drawSprite } from './sprites.js';
 import { getSelectedTowerType, setSelectedTowerType } from './input.js';
 
-// Tower panel: 5 slots across the bottom of the canvas
-// Each slot: 64px wide x 60px tall, starting at y=420
-// Right side 345-640 is info area (selected tower description)
+// Sidebar layout constants
+const SB_X = 640;       // sidebar left edge
+const SB_W = 260;       // sidebar width
+const SB_H = 480;
 
-const PANEL_Y = 420;
-const SLOT_W = 64;
-const SLOT_H = 60;
-const SLOTS_START_X = 8;
+// Tower slot layout — single column, 5 rows
+const SLOT_H = 52;
+const SLOT_Y_START = 30; // below HUD extension
+const SLOT_X = SB_X + 10;
+const SLOT_W = 240;
 
-export function renderTowerPanel(ctx) {
-  // Panel background
-  ctx.fillStyle = 'rgba(20, 15, 30, 0.88)';
-  ctx.fillRect(0, PANEL_Y, 640, 60);
-  ctx.strokeStyle = '#555566';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(0, PANEL_Y, 640, 60);
-
-  const towers = getTowerList();
-
-  towers.forEach((def, i) => {
-    const sx = SLOTS_START_X + i * (SLOT_W + 4);
-    const sy = PANEL_Y + 4;
-    const selected = getSelectedTowerType() === def.id;
-    const canAfford = state.gold >= def.cost;
-
-    // Slot background
-    ctx.fillStyle = selected ? '#3a4a6a' : (canAfford ? '#2a2a3a' : '#1a1a22');
-    ctx.fillRect(sx, sy, SLOT_W, SLOT_H - 8);
-
-    // Selection border
-    if (selected) {
-      ctx.strokeStyle = '#7799ff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(sx, sy, SLOT_W, SLOT_H - 8);
-    }
-
-    // Tower sprite (centred in slot)
-    ctx.imageSmoothingEnabled = false;
-    drawSprite(ctx, 'tower_' + def.id, sx + 16, sy + 4);
-
-    // Key hint
-    ctx.fillStyle = '#aaaaaa';
-    ctx.font = '9px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('[' + (i + 1) + ']', sx + 2, sy + SLOT_H - 12);
-
-    // Cost
-    ctx.fillStyle = canAfford ? '#FFD700' : '#884400';
-    ctx.font = 'bold 9px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(def.cost + 'g', sx + SLOT_W - 2, sy + SLOT_H - 12);
-
-    // Lock indicator for lemonade can
-    if (def.id === 'lemonadecan' && !state.unlocks.lemonadecan) {
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(sx, sy, SLOT_W, SLOT_H - 8);
-      ctx.fillStyle = '#888888';
-      ctx.font = '18px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('\u{1F512}', sx + SLOT_W / 2, sy + 30);
-    }
-  });
-
-  // Selected tower info (right side)
-  renderSelectedTowerInfo(ctx, towers);
-}
-
-function renderSelectedTowerInfo(ctx, towers) {
-  const def = towers.find(t => t.id === getSelectedTowerType());
-  if (!def) return;
-
-  const ix = 345;
-  const iy = PANEL_Y + 8;
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 12px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText(def.name, ix, iy + 10);
-
-  ctx.fillStyle = '#aaccff';
-  ctx.font = '10px monospace';
-  ctx.fillText('DMG: ' + def.damage + '  RNG: ' + def.range + '  SPD: ' + def.fireRate + '/s', ix, iy + 24);
-
-  ctx.fillStyle = state.gold >= def.cost ? '#FFD700' : '#ff6644';
-  ctx.fillText('Cost: ' + def.cost + 'g  (have: ' + state.gold + 'g)', ix, iy + 38);
-
-  if (def.special) {
-    ctx.fillStyle = '#88ffaa';
-    ctx.fillText(def.special, ix, iy + 52);
-  }
-}
+// Button areas (for hit testing)
+const BTN_STARTWAVE   = { x: SB_X + 10, y: 310, w: 240, h: 34 };
+const BTN_AUTOPROCEED = { x: SB_X + 10, y: 352, w: 240, h: 28 };
+const BTN_TURBO       = { x: SB_X + 10, y: 388, w: 240, h: 28 };
+const BTN_MENU        = { x: SB_X + 10, y: 434, w: 240, h: 34 };
 
 function getTowerList() {
   return Object.entries(TOWER_DEFS).map(([id, def]) => ({ id, ...def }));
 }
 
-// Hit-test: returns tower type string if click is in the panel, null otherwise
-export function panelHitTest(x, y) {
-  if (y < PANEL_Y || y > PANEL_Y + 60) return null;
+export function renderSidebar(ctx) {
+  // Sidebar background
+  ctx.fillStyle = 'rgba(15, 12, 25, 0.92)';
+  ctx.fillRect(SB_X, 0, SB_W, SB_H);
+
+  // Separator line between game area and sidebar
+  ctx.strokeStyle = '#554488';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(SB_X, 0);
+  ctx.lineTo(SB_X, SB_H);
+  ctx.stroke();
+
+  // HUD extension bar at top of sidebar
+  ctx.fillStyle = 'rgba(10, 8, 20, 0.85)';
+  ctx.fillRect(SB_X, 0, SB_W, 26);
+
+  // Tower slots
   const towers = getTowerList();
-  for (let i = 0; i < towers.length; i++) {
-    const sx = SLOTS_START_X + i * (SLOT_W + 4);
-    if (x >= sx && x <= sx + SLOT_W) {
-      const def = towers[i];
-      // Don't select locked tower
-      if (def.id === 'lemonadecan' && !state.unlocks.lemonadecan) return null;
-      return def.id;
+  const selected = getSelectedTowerType();
+
+  towers.forEach((def, i) => {
+    const sy = SLOT_Y_START + i * SLOT_H;
+    const isSelected = selected === def.id;
+    const canAfford = state.gold >= def.cost;
+    const isLocked = def.id === 'lemonadecan' && !state.unlocks.lemonadecan;
+
+    // Slot background
+    ctx.fillStyle = isSelected ? '#3a4a6a' : (canAfford ? '#2a2a3a' : '#1a1a22');
+    ctx.fillRect(SLOT_X, sy, SLOT_W, SLOT_H - 4);
+
+    // Selection border
+    if (isSelected) {
+      ctx.strokeStyle = '#7799ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(SLOT_X, sy, SLOT_W, SLOT_H - 4);
+    }
+
+    // Tower sprite (left 40px area, centred)
+    ctx.imageSmoothingEnabled = false;
+    drawSprite(ctx, 'tower_' + def.id, SLOT_X + 4, sy + 8);
+
+    // Tower name (bold)
+    ctx.fillStyle = isSelected ? '#ffffff' : '#cccccc';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(def.name, SLOT_X + 40, sy + 16);
+
+    // Cost and key shortcut
+    ctx.fillStyle = canAfford ? '#FFD700' : '#884400';
+    ctx.font = '10px monospace';
+    ctx.fillText(def.cost + 'g', SLOT_X + 40, sy + 30);
+
+    ctx.fillStyle = '#888888';
+    ctx.fillText('[' + (i + 1) + ']', SLOT_X + 40 + 50, sy + 30);
+
+    // Selection indicator (right side)
+    if (isSelected) {
+      ctx.fillStyle = '#7799ff';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('\u25C0', SLOT_X + SLOT_W - 6, sy + 22);
+    }
+
+    // Lock overlay for lemonade can
+    if (isLocked) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(SLOT_X, sy, SLOT_W, SLOT_H - 4);
+      ctx.fillStyle = '#888888';
+      ctx.font = '18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('\u{1F512}', SLOT_X + SLOT_W / 2, sy + 30);
+    }
+  });
+
+  // Selected tower description area (y: 268–308)
+  const selDef = towers.find(t => t.id === selected);
+  if (selDef) {
+    ctx.fillStyle = '#aaccff';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('DMG: ' + selDef.damage + '  RNG: ' + selDef.range + '  SPD: ' + selDef.fireRate + '/s', SLOT_X, 280);
+    if (selDef.special) {
+      ctx.fillStyle = '#88ffaa';
+      ctx.fillText('Special: ' + selDef.special, SLOT_X, 296);
     }
   }
+
+  // Start Wave button (y: 310–344)
+  if (state.current === STATES.WAVE_IDLE) {
+    const timerActive = state.autoProceed && state.waveIdleTimer > 0;
+    const canStart = state.wave < state.totalWaves && !timerActive;
+
+    ctx.fillStyle = canStart ? '#4a7c59' : '#555566';
+    ctx.fillRect(BTN_STARTWAVE.x, BTN_STARTWAVE.y, BTN_STARTWAVE.w, BTN_STARTWAVE.h);
+    ctx.strokeStyle = canStart ? '#6a9c79' : '#666677';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(BTN_STARTWAVE.x, BTN_STARTWAVE.y, BTN_STARTWAVE.w, BTN_STARTWAVE.h);
+
+    let btnLabel;
+    if (state.wave === 0) {
+      btnLabel = 'Start Wave 1  \u2192';
+    } else if (timerActive) {
+      btnLabel = 'Wave ' + (state.wave + 1) + ' in ' + Math.ceil(state.waveIdleTimer) + 's';
+    } else {
+      btnLabel = 'Next Wave \u2192';
+    }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(btnLabel, BTN_STARTWAVE.x + BTN_STARTWAVE.w / 2, BTN_STARTWAVE.y + 22);
+  }
+
+  // Auto-proceed toggle (y: 352–380)
+  if (state.current === STATES.WAVE_IDLE) {
+    ctx.fillStyle = state.autoProceed ? '#2a3a5a' : '#1a1a2a';
+    ctx.fillRect(BTN_AUTOPROCEED.x, BTN_AUTOPROCEED.y, BTN_AUTOPROCEED.w, BTN_AUTOPROCEED.h);
+    ctx.strokeStyle = '#444466';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(BTN_AUTOPROCEED.x, BTN_AUTOPROCEED.y, BTN_AUTOPROCEED.w, BTN_AUTOPROCEED.h);
+
+    ctx.fillStyle = state.autoProceed ? '#aaccff' : '#888899';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    const apLabel = state.autoProceed ? '[\u2713] Auto-proceed (5s)' : '[ ] Auto-proceed';
+    ctx.fillText(apLabel, BTN_AUTOPROCEED.x + 8, BTN_AUTOPROCEED.y + 18);
+  }
+
+  // Turbo toggle (y: 388–416) — visible in WAVE_IDLE and WAVE_RUNNING
+  if (state.current === STATES.WAVE_IDLE || state.current === STATES.WAVE_RUNNING) {
+    ctx.fillStyle = state.turboMode ? '#3a2a1a' : '#1a1a2a';
+    ctx.fillRect(BTN_TURBO.x, BTN_TURBO.y, BTN_TURBO.w, BTN_TURBO.h);
+    ctx.strokeStyle = '#444466';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(BTN_TURBO.x, BTN_TURBO.y, BTN_TURBO.w, BTN_TURBO.h);
+
+    ctx.fillStyle = state.turboMode ? '#ffcc44' : '#888899';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    const turboLabel = state.turboMode ? '[\u2713] Turbo x2 \u26A1' : '[ ] Turbo x2';
+    ctx.fillText(turboLabel, BTN_TURBO.x + 8, BTN_TURBO.y + 18);
+  }
+
+  // Back to Menu button (y: 434–468) — always visible
+  ctx.fillStyle = '#4a2222';
+  ctx.fillRect(BTN_MENU.x, BTN_MENU.y, BTN_MENU.w, BTN_MENU.h);
+  ctx.strokeStyle = '#6a3333';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(BTN_MENU.x, BTN_MENU.y, BTN_MENU.w, BTN_MENU.h);
+
+  ctx.fillStyle = '#ffaaaa';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Back to Menu', BTN_MENU.x + BTN_MENU.w / 2, BTN_MENU.y + 22);
+}
+
+// Hit-test: returns action string or null
+export function sidebarHitTest(x, y) {
+  if (x < SB_X) return null;
+
+  // Tower slot hit test
+  const towers = getTowerList();
+  for (let i = 0; i < towers.length; i++) {
+    const sy = SLOT_Y_START + i * SLOT_H;
+    if (x >= SLOT_X && x <= SLOT_X + SLOT_W && y >= sy && y <= sy + SLOT_H - 4) {
+      return 'tower:' + towers[i].id;
+    }
+  }
+
+  // Start Wave button
+  if (hitRect(x, y, BTN_STARTWAVE)) return 'startwave';
+
+  // Auto-proceed toggle
+  if (hitRect(x, y, BTN_AUTOPROCEED)) return 'autoproceed';
+
+  // Turbo toggle
+  if (hitRect(x, y, BTN_TURBO)) return 'turbo';
+
+  // Menu button
+  if (hitRect(x, y, BTN_MENU)) return 'menu';
+
   return null;
 }
+
+function hitRect(x, y, r) {
+  return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+}
+
+// Keep old exports as aliases for backwards compatibility
+export const renderTowerPanel = renderSidebar;
+export const panelHitTest = sidebarHitTest;

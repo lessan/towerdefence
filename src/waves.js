@@ -81,6 +81,6 @@ function onWaveComplete() {
     transitionTo(STATES.VICTORY);
   } else {
     transitionTo(STATES.WAVE_IDLE);
-    state.waveIdleTimer = state.mode === 'boss' ? 12 : 8;
+    state.waveIdleTimer = state.autoProceed ? 5 : 0;
   }
 }
