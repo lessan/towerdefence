@@ -18,6 +18,12 @@ export function update(dt) {
     case STATES.WAVE_IDLE: {
       getPath(); // keep cache fresh
 
+      // Tick wave clear message timer
+      if (state.waveClearTimer > 0) {
+        state.waveClearTimer -= dt;
+        if (state.waveClearTimer <= 0) state.waveClearMessage = null;
+      }
+
       // Auto-proceed countdown (only if autoProceed is ON and not first wave)
       if (state.autoProceed && state.wave > 0 && state.wave < state.totalWaves) {
         state.waveIdleTimer -= dt;
@@ -87,6 +93,11 @@ export function update(dt) {
       break;
     }
     case STATES.WAVE_RUNNING: {
+      // Tick wave clear message timer (may still be fading from previous wave)
+      if (state.waveClearTimer > 0) {
+        state.waveClearTimer -= dt;
+        if (state.waveClearTimer <= 0) state.waveClearMessage = null;
+      }
       updateEnemies(dt);
       updateCombat(dt);
       updateWaveSpawner(dt);
@@ -95,7 +106,23 @@ export function update(dt) {
       for (const e of events) {
         if (e.type === 'click' && e.button === 0) {
           const sidebarAction = sidebarHitTest(e.x, e.y);
-          if (sidebarAction) handleSidebarAction(sidebarAction);
+          if (sidebarAction) {
+            handleSidebarAction(sidebarAction);
+          } else if (e.x < 640) {
+            // Grid click: tower inspection during wave (no placement/sell)
+            const tileX = Math.floor(e.x / 32);
+            const tileY = Math.floor(e.y / 32);
+            const tile = getTile(state.grid, tileX, tileY);
+            if (tile && tile.type === 'TOWER') {
+              if (state.selectedTowerTile && state.selectedTowerTile.x === tileX && state.selectedTowerTile.y === tileY) {
+                state.selectedTowerTile = null;
+              } else {
+                state.selectedTowerTile = { x: tileX, y: tileY };
+              }
+            } else {
+              state.selectedTowerTile = null;
+            }
+          }
         } else if (e.type === 'keydown') {
           if (e.key === 't' || e.key === 'T') state.turboMode = !state.turboMode;
         }

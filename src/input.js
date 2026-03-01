@@ -62,6 +62,7 @@ function resolveCursor(px, py) {
   if (!tile) return 'default';
 
   if (tile.type === TILE_TYPES.GRASS) {
+    if (!selectedTowerType) return 'default'; // no tower selected — no placement mode
     const def = TOWER_DEFS[selectedTowerType];
     if (def && state.gold >= def.cost) return 'none'; // custom tower cursor drawn on canvas
     return 'default'; // can't afford — no preview, normal cursor

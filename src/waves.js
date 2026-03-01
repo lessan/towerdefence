@@ -84,6 +84,9 @@ function onWaveComplete() {
     else recordStat('gamesWon');
     transitionTo(STATES.VICTORY);
   } else {
+    // Show wave clear message
+    state.waveClearMessage = `WAVE ${state.wave} CLEARED!`;
+    state.waveClearTimer = 2.5;
     transitionTo(STATES.WAVE_IDLE);
     state.waveIdleTimer = state.autoProceed ? 5 : 0;
   }

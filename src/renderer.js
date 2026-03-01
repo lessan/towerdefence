@@ -156,8 +156,8 @@ function renderGame(ctx) {
     ctx.fillRect(19 * 32 + 6, 7 * 32 + 6, 20, 20);
   }
 
-  // Layer 4: Tower range preview (WAVE_IDLE only)
-  if (state.current === STATES.WAVE_IDLE) {
+  // Layer 4: Tower range preview
+  if (state.current === STATES.WAVE_IDLE || state.current === STATES.WAVE_RUNNING) {
     drawRangePreview(ctx);
   }
 
@@ -224,6 +224,30 @@ function renderGame(ctx) {
     ctx.font = 'bold 20px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(state.waveMessage, 320, 237);
+  }
+
+  // Wave clear banner
+  if (state.waveClearMessage && state.waveClearTimer > 0) {
+    const fadeStart = 0.5;
+    const alpha = state.waveClearTimer < fadeStart ? state.waveClearTimer / fadeStart : 1.0;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(320, 240);
+
+    // Background pill
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(-160, -30, 320, 60);
+
+    // Text
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 32px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(state.waveClearMessage, 0, 0);
+    ctx.textBaseline = 'alphabetic';
+
+    ctx.restore();
   }
 
   // Layer 10: Sidebar

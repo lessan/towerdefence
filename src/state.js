@@ -39,6 +39,8 @@ export const state = {
   mouseX: 0,
   mouseY: 0,
   selectedTowerTile: null,
+  waveClearMessage: null,
+  waveClearTimer: 0,
 };
 
 export function transitionTo(newState) {
@@ -61,6 +63,8 @@ export function initGameState(mode) {
   state.newUnlock = false;
   state.unlockChecked = false;
   state.selectedTowerTile = null;
+  state.waveClearMessage = null;
+  state.waveClearTimer = 0;
   recordStat('gamesStarted');
 }
 
