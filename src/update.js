@@ -222,6 +222,7 @@ function updateMenu() {
     const rb = menuButtons.regular;
     if (x >= rb.x && x < rb.x + rb.w && y >= rb.y && y < rb.y + rb.h) {
       initGameState('regular');
+      setSelectedTowerType(null);
       transitionTo(STATES.WAVE_IDLE);
       return;
     }
@@ -229,6 +230,7 @@ function updateMenu() {
     const bb = menuButtons.boss;
     if (x >= bb.x && x < bb.x + bb.w && y >= bb.y && y < bb.y + bb.h) {
       initGameState('boss');
+      setSelectedTowerType(null);
       transitionTo(STATES.WAVE_IDLE);
       return;
     }
