@@ -132,13 +132,14 @@ function renderGame(ctx) {
     drawRangePreview(ctx);
   }
 
-  // Placement ghost (WAVE_IDLE only)
+  // Placement ghost (WAVE_IDLE only, GRASS tile, can afford)
   if (state.current === STATES.WAVE_IDLE) {
     const tx = state.hoverTileX;
     const ty = state.hoverTileY;
-    if (tx >= 0 && tx < 20 && ty >= 0 && ty < 15) {
+    if (tx >= 0 && tx < 20 && ty >= 0 && ty < 15 && state.mouseX < 640) {
       const tile = getTile(state.grid, tx, ty);
-      if (tile && tile.type === 'GRASS') {
+      const def = TOWER_DEFS[getSelectedTowerType()];
+      if (tile && tile.type === 'GRASS' && def && state.gold >= def.cost) {
         ctx.globalAlpha = 0.45;
         ctx.imageSmoothingEnabled = false;
         drawSprite(ctx, 'tower_' + getSelectedTowerType(), tx * 32, ty * 32);
@@ -176,24 +177,13 @@ function renderGame(ctx) {
   // Layer 9: HUD bar
   renderHUD(ctx);
 
-  // Custom cursor — tower icon following mouse (game area only)
-  if (state.mouseX > 0 && state.mouseX < 640 && state.current === STATES.WAVE_IDLE) {
+  // Custom cursor — only drawn when CSS cursor is 'none' (GRASS tile + can afford + WAVE_IDLE)
+  const canvas = ctx.canvas;
+  if (canvas.style.cursor === 'none' && state.mouseX < 640) {
     ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = 0.9;
     drawSprite(ctx, 'tower_' + getSelectedTowerType(), Math.round(state.mouseX) - 8, Math.round(state.mouseY) - 8);
     ctx.globalAlpha = 1.0;
-  } else {
-    // Default crosshair cursor in game area during WAVE_RUNNING
-    if (state.mouseX < 640) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(Math.round(state.mouseX) - 6, Math.round(state.mouseY));
-      ctx.lineTo(Math.round(state.mouseX) + 6, Math.round(state.mouseY));
-      ctx.moveTo(Math.round(state.mouseX), Math.round(state.mouseY) - 6);
-      ctx.lineTo(Math.round(state.mouseX), Math.round(state.mouseY) + 6);
-      ctx.stroke();
-    }
   }
 
   // Wave message banner (WAVE_RUNNING only)
