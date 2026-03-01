@@ -15,6 +15,7 @@ export function checkUnlock() {
   if (state.lives < 10) return false;
   if (!isUnlocked(UNLOCK_KEY)) {
     setUnlocked(UNLOCK_KEY);
+    state.unlocks.lemonadecan = true;
     state.newUnlock = true;
     recordStat('lemonadeCanUnlocks');
     return true;
