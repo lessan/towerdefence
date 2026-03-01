@@ -8,11 +8,11 @@ import { getStats } from './stats.js';
 
 // Button hit areas exported for input detection
 export const menuButtons = {
-  regular: { x: 210, y: 280, w: 220, h: 40 },
-  boss: { x: 210, y: 335, w: 220, h: 40 },
+  regular: { x: 260, y: 280, w: 220, h: 40 },
+  boss: { x: 260, y: 335, w: 220, h: 40 },
 };
 
-export const menuClearBtn = { x: 20, y: 448, w: 160, h: 24 };
+export const menuClearBtn = { x: 655, y: 430, w: 220, h: 28 };
 
 export function render(ctx) {
   ctx.clearRect(0, 0, 900, 480);
@@ -35,71 +35,115 @@ export function render(ctx) {
 }
 
 function renderMenu(ctx) {
-  // Dark starry background
+  // Dark starry background — full 900×480
   ctx.fillStyle = '#0d0d1f';
   ctx.fillRect(0, 0, 900, 480);
 
-  // Decorative pixel-art style border (game area only)
+  // Decorative pixel-art style border around the ENTIRE canvas
   ctx.strokeStyle = '#554488';
   ctx.lineWidth = 3;
-  ctx.strokeRect(12, 12, 616, 456);
+  ctx.strokeRect(12, 12, 876, 456);
   ctx.strokeStyle = '#332266';
   ctx.lineWidth = 1;
-  ctx.strokeRect(18, 18, 604, 444);
+  ctx.strokeRect(18, 18, 864, 444);
 
-  // Title (centred on game area at x=320)
+  // ── LEFT HALF: title, subtitle, mode buttons, unlock hint ──
+  // Title centred at x=370
   ctx.fillStyle = '#FFD700';
   ctx.font = 'bold 52px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('REALM', 320, 140);
+  ctx.fillText('REALM', 370, 140);
   ctx.fillStyle = '#e6c200';
-  ctx.fillText('RAMPARTS', 320, 200);
+  ctx.fillText('RAMPARTS', 370, 200);
 
   // Subtitle
   ctx.fillStyle = '#9988cc';
   ctx.font = '15px monospace';
-  ctx.fillText('a maze-builder tower defence', 320, 235);
+  ctx.fillText('a maze-builder tower defence', 370, 235);
 
-  // Mode buttons
+  // Mode buttons centred at x=370
   const rb = menuButtons.regular;
   drawMenuButton(ctx, rb.x + rb.w / 2, rb.y + rb.h / 2, rb.w, rb.h, 'Regular Mode  \u25B6', '#3a6a3a', '#4a8a4a');
+  if (state.mouseX >= rb.x && state.mouseX <= rb.x + rb.w && state.mouseY >= rb.y && state.mouseY <= rb.y + rb.h) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(rb.x, rb.y, rb.w, rb.h);
+  }
+
   const bb = menuButtons.boss;
   drawMenuButton(ctx, bb.x + bb.w / 2, bb.y + bb.h / 2, bb.w, bb.h, 'Boss Mode  \u2694', '#6a2a2a', '#8a3a3a');
+  if (state.mouseX >= bb.x && state.mouseX <= bb.x + bb.w && state.mouseY >= bb.y && state.mouseY <= bb.y + bb.h) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bb.x, bb.y, bb.w, bb.h);
+  }
 
-  // Unlock hint
+  // Unlock hint centred at x=370
   if (state.unlocks.lemonadecan) {
     ctx.fillStyle = '#FFD700';
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('\u{1F3C6} Lemonade Can unlocked', 320, 415);
+    ctx.fillText('\u{1F3C6} Lemonade Can unlocked', 370, 400);
   } else {
     ctx.fillStyle = '#554466';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('complete regular mode (\u226510 lives) to unlock secret tower', 320, 415);
+    ctx.fillText('complete regular mode (\u226510 lives) to unlock secret tower', 370, 400);
   }
 
-  // Controls hint
-  ctx.fillStyle = '#443355';
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('[1-4] select tower   click to place   right-click to sell', 320, 445);
+  // ── RIGHT COLUMN: stats panel (x=650–880, 230px wide) ──
+  const panelX = 650;
+  const panelY = 30;
+  const panelW = 230;
+  const panelH = 390;
 
-  // Stats section
-  const stats = getStats();
-  const statsY = 390;
+  // Panel background
+  ctx.fillStyle = 'rgba(10, 8, 20, 0.7)';
+  ctx.fillRect(panelX, panelY, panelW, panelH);
+  ctx.strokeStyle = '#332255';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(panelX, panelY, panelW, panelH);
 
-  ctx.fillStyle = 'rgba(255,255,255,0.05)';
-  ctx.fillRect(160, statsY - 10, 320, 60);
-
-  ctx.fillStyle = '#667788';
-  ctx.font = '11px monospace';
+  // STATS label
+  ctx.fillStyle = '#667799';
+  ctx.font = 'bold 11px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`Games: ${stats.gamesStarted}  Won: ${stats.gamesWon}  Boss wins: ${stats.bossGamesWon}`, 170, statsY + 6);
-  ctx.fillText(`Waves cleared: ${stats.totalWavesCleared}  Enemies killed: ${stats.enemiesKilled}`, 170, statsY + 22);
-  ctx.fillText(`Gold earned: ${stats.goldEarned}  Towers placed: ${stats.towersPlaced}`, 170, statsY + 38);
+  ctx.fillText('STATS', panelX + 10, panelY + 20);
 
-  // Clear data button
+  // Stats table
+  const stats = getStats();
+  const statRows = [
+    ['Games Started', stats.gamesStarted],
+    ['Games Won', stats.gamesWon],
+    ['Boss Wins', stats.bossGamesWon],
+    ['Waves Cleared', stats.totalWavesCleared],
+    ['Enemies Killed', stats.enemiesKilled],
+    ['Gold Earned', stats.goldEarned],
+    ['Towers Placed', stats.towersPlaced],
+  ];
+  ctx.font = '11px monospace';
+  const rowStartY = panelY + 40;
+  const rowH = 28;
+  statRows.forEach(([label, value], i) => {
+    const ry = rowStartY + i * rowH;
+    ctx.fillStyle = '#667799';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, panelX + 10, ry);
+    ctx.fillStyle = '#aaccff';
+    ctx.textAlign = 'right';
+    ctx.fillText(String(value), panelX + panelW - 10, ry);
+  });
+
+  // Separator line before clear button
+  const sepY = panelY + panelH - 10;
+  ctx.strokeStyle = '#332255';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(panelX + 8, sepY);
+  ctx.lineTo(panelX + panelW - 8, sepY);
+  ctx.stroke();
+
+  // Clear data button pinned near bottom of right column
   const clearBtn = menuClearBtn;
   ctx.fillStyle = 'rgba(80, 20, 20, 0.7)';
   ctx.fillRect(clearBtn.x, clearBtn.y, clearBtn.w, clearBtn.h);
@@ -109,7 +153,18 @@ function renderMenu(ctx) {
   ctx.fillStyle = '#aa6666';
   ctx.font = '11px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Clear All Data', clearBtn.x + clearBtn.w / 2, clearBtn.y + 16);
+  ctx.fillText('Clear All Data', clearBtn.x + clearBtn.w / 2, clearBtn.y + 18);
+  if (state.mouseX >= clearBtn.x && state.mouseX <= clearBtn.x + clearBtn.w && state.mouseY >= clearBtn.y && state.mouseY <= clearBtn.y + clearBtn.h) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(clearBtn.x, clearBtn.y, clearBtn.w, clearBtn.h);
+  }
+
+  // Controls hint spanning full width, centred at x=450
+  ctx.fillStyle = '#443355';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('[1-4] select tower   click to place   right-click to sell', 450, 458);
 }
 
 function drawMenuButton(ctx, cx, cy, w, h, label, bg, hover) {

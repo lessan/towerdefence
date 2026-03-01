@@ -16,6 +16,11 @@ const SLOT_Y_START = 24; // below compact HUD
 const SLOT_X = SB_X + 10;
 const SLOT_W = 240;
 
+function isHovered(r) {
+  const mx = state.mouseX, my = state.mouseY;
+  return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h;
+}
+
 // Module-level hit areas — rebuilt each renderSidebar call
 let currentTowerSlotRects = [];
 let currentBtnStartwave = null;
@@ -124,7 +129,13 @@ export function renderSidebar(ctx) {
       ctx.fillText('\u{1F512}', SLOT_X + SLOT_W / 2, slotY + 28);
     }
 
-    towerSlotRects.push({ id: def.id, x: SLOT_X, y: slotY, w: SLOT_W, h: slotH - 4 });
+    const slotRect = { id: def.id, x: SLOT_X, y: slotY, w: SLOT_W, h: slotH - 4 };
+    towerSlotRects.push(slotRect);
+    if (isHovered(slotRect)) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(slotRect.x, slotRect.y, slotRect.w, slotRect.h);
+    }
     slotY += slotH;
   });
 
@@ -168,6 +179,11 @@ export function renderSidebar(ctx) {
         ctx.textAlign = 'right';
         ctx.fillText('[DEL] to sell', SLOT_X + SLOT_W, sellRect.y + 32);
       }
+      if (isHovered(sellRect)) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(sellRect.x, sellRect.y, sellRect.w, sellRect.h);
+      }
       currentBtnSell = sellRect;
       btnY += 30;
     } else {
@@ -202,6 +218,11 @@ export function renderSidebar(ctx) {
     ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(btnLabel, swRect.x + swRect.w / 2, swRect.y + 22);
+    if (isHovered(swRect)) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(swRect.x, swRect.y, swRect.w, swRect.h);
+    }
     currentBtnStartwave = swRect;
     btnY += 42;
   } else {
@@ -222,6 +243,11 @@ export function renderSidebar(ctx) {
     ctx.textAlign = 'left';
     const apLabel = state.autoProceed ? '[\u2713] Auto-proceed (5s)' : '[ ] Auto-proceed';
     ctx.fillText(apLabel, apRect.x + 8, apRect.y + 18);
+    if (isHovered(apRect)) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(apRect.x, apRect.y, apRect.w, apRect.h);
+    }
     currentBtnAutoproceed = apRect;
     btnY += 36;
   } else {
@@ -242,6 +268,11 @@ export function renderSidebar(ctx) {
     ctx.textAlign = 'left';
     const turboLabel = state.turboMode ? '[\u2713] Turbo x2 \u26A1' : '[ ] Turbo x2';
     ctx.fillText(turboLabel, tRect.x + 8, tRect.y + 18);
+    if (isHovered(tRect)) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(tRect.x, tRect.y, tRect.w, tRect.h);
+    }
     currentBtnTurbo = tRect;
     btnY += 36;
   } else {
@@ -260,6 +291,11 @@ export function renderSidebar(ctx) {
   ctx.font = 'bold 13px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('Back to Menu', menuRect.x + menuRect.w / 2, menuRect.y + 22);
+  if (isHovered(menuRect)) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(menuRect.x, menuRect.y, menuRect.w, menuRect.h);
+  }
   currentBtnMenu = menuRect;
 }
 

@@ -86,8 +86,8 @@ function onWaveComplete() {
   } else {
     // Show wave clear message
     state.waveClearMessage = `WAVE ${state.wave} CLEARED!`;
-    state.waveClearTimer = 2.5;
+    state.waveClearTimer = state.turboMode ? 1.25 : 2.5;
     transitionTo(STATES.WAVE_IDLE);
-    state.waveIdleTimer = state.autoProceed ? 5 : 0;
+    state.waveIdleTimer = state.autoProceed ? (state.turboMode ? 2.5 : 5) : 0;
   }
 }

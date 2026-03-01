@@ -4,7 +4,7 @@ import { TOWER_DEFS } from './towers.js';
 
 const inputQueue = [];
 
-let selectedTowerType = 'crossbow';
+let selectedTowerType = null;
 export function setSelectedTowerType(type) { selectedTowerType = type; }
 export function getSelectedTowerType() { return selectedTowerType; }
 

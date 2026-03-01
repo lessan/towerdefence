@@ -46,6 +46,14 @@ export function update(dt) {
           if (e.x < 640) {
             const tileX = Math.floor(e.x / 32);
             const tileY = Math.floor(e.y / 32);
+            if (tileX === 0 && tileY === 7) {
+              state.feedback = { message: 'ENTRY — enemies spawn here', timer: 2.0 };
+              continue;
+            }
+            if (tileX === 19 && tileY === 7) {
+              state.feedback = { message: 'EXIT — defend this point!', timer: 2.0 };
+              continue;
+            }
             const tile = getTile(state.grid, tileX, tileY);
             if (tile && tile.type === 'TOWER') {
               // Toggle: click same tower again to deselect
@@ -112,6 +120,14 @@ export function update(dt) {
             // Grid click: tower inspection during wave (no placement/sell)
             const tileX = Math.floor(e.x / 32);
             const tileY = Math.floor(e.y / 32);
+            if (tileX === 0 && tileY === 7) {
+              state.feedback = { message: 'ENTRY — enemies spawn here', timer: 2.0 };
+              continue;
+            }
+            if (tileX === 19 && tileY === 7) {
+              state.feedback = { message: 'EXIT — defend this point!', timer: 2.0 };
+              continue;
+            }
             const tile = getTile(state.grid, tileX, tileY);
             if (tile && tile.type === 'TOWER') {
               if (state.selectedTowerTile && state.selectedTowerTile.x === tileX && state.selectedTowerTile.y === tileY) {
@@ -156,7 +172,7 @@ function handleSidebarAction(action) {
     case 'turbo': state.turboMode = !state.turboMode; break;
     case 'autoproceed':
       state.autoProceed = !state.autoProceed;
-      if (state.autoProceed && state.waveIdleTimer <= 0) state.waveIdleTimer = 5;
+      if (state.autoProceed && state.waveIdleTimer <= 0) state.waveIdleTimer = state.turboMode ? 2.5 : 5;
       break;
     case 'startwave':
       if (state.current === STATES.WAVE_IDLE && state.wave < state.totalWaves) {
