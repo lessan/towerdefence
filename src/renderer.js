@@ -4,12 +4,15 @@ import { getSelectedTowerType } from './input.js';
 import { TOWER_DEFS } from './towers.js';
 import { drawSprite } from './sprites.js';
 import { renderSidebar } from './ui.js';
+import { getStats } from './stats.js';
 
 // Button hit areas exported for input detection
 export const menuButtons = {
   regular: { x: 210, y: 280, w: 220, h: 40 },
   boss: { x: 210, y: 335, w: 220, h: 40 },
 };
+
+export const menuClearBtn = { x: 20, y: 448, w: 160, h: 24 };
 
 export function render(ctx) {
   ctx.clearRect(0, 0, 900, 480);
@@ -81,6 +84,32 @@ function renderMenu(ctx) {
   ctx.font = '11px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('[1-4] select tower   click to place   right-click to sell', 320, 445);
+
+  // Stats section
+  const stats = getStats();
+  const statsY = 390;
+
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.fillRect(160, statsY - 10, 320, 60);
+
+  ctx.fillStyle = '#667788';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Games: ${stats.gamesStarted}  Won: ${stats.gamesWon}  Boss wins: ${stats.bossGamesWon}`, 170, statsY + 6);
+  ctx.fillText(`Waves cleared: ${stats.totalWavesCleared}  Enemies killed: ${stats.enemiesKilled}`, 170, statsY + 22);
+  ctx.fillText(`Gold earned: ${stats.goldEarned}  Towers placed: ${stats.towersPlaced}`, 170, statsY + 38);
+
+  // Clear data button
+  const clearBtn = menuClearBtn;
+  ctx.fillStyle = 'rgba(80, 20, 20, 0.7)';
+  ctx.fillRect(clearBtn.x, clearBtn.y, clearBtn.w, clearBtn.h);
+  ctx.strokeStyle = '#663333';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(clearBtn.x, clearBtn.y, clearBtn.w, clearBtn.h);
+  ctx.fillStyle = '#aa6666';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Clear All Data', clearBtn.x + clearBtn.w / 2, clearBtn.y + 16);
 }
 
 function drawMenuButton(ctx, cx, cy, w, h, label, bg, hover) {
@@ -132,18 +161,21 @@ function renderGame(ctx) {
     drawRangePreview(ctx);
   }
 
-  // Placement ghost (WAVE_IDLE only, GRASS tile, can afford)
+  // Placement ghost (WAVE_IDLE only, GRASS tile, can afford, tower selected)
   if (state.current === STATES.WAVE_IDLE) {
-    const tx = state.hoverTileX;
-    const ty = state.hoverTileY;
-    if (tx >= 0 && tx < 20 && ty >= 0 && ty < 15 && state.mouseX < 640) {
-      const tile = getTile(state.grid, tx, ty);
-      const def = TOWER_DEFS[getSelectedTowerType()];
-      if (tile && tile.type === 'GRASS' && def && state.gold >= def.cost) {
-        ctx.globalAlpha = 0.45;
-        ctx.imageSmoothingEnabled = false;
-        drawSprite(ctx, 'tower_' + getSelectedTowerType(), tx * 32, ty * 32);
-        ctx.globalAlpha = 1.0;
+    const selType = getSelectedTowerType();
+    if (selType) {
+      const tx = state.hoverTileX;
+      const ty = state.hoverTileY;
+      if (tx >= 0 && tx < 20 && ty >= 0 && ty < 15 && state.mouseX < 640) {
+        const tile = getTile(state.grid, tx, ty);
+        const def = TOWER_DEFS[selType];
+        if (tile && tile.type === 'GRASS' && def && state.gold >= def.cost) {
+          ctx.globalAlpha = 0.45;
+          ctx.imageSmoothingEnabled = false;
+          drawSprite(ctx, 'tower_' + selType, tx * 32, ty * 32);
+          ctx.globalAlpha = 1.0;
+        }
       }
     }
   }
@@ -174,15 +206,13 @@ function renderGame(ctx) {
     ctx.fillText(state.feedback.message, 320, 245);
   }
 
-  // Layer 9: HUD bar
-  renderHUD(ctx);
-
   // Custom cursor — only drawn when CSS cursor is 'none' (GRASS tile + can afford + WAVE_IDLE)
   const canvas = ctx.canvas;
-  if (canvas.style.cursor === 'none' && state.mouseX < 640) {
+  const cursorType = getSelectedTowerType();
+  if (canvas.style.cursor === 'none' && state.mouseX < 640 && cursorType) {
     ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = 0.9;
-    drawSprite(ctx, 'tower_' + getSelectedTowerType(), Math.round(state.mouseX) - 8, Math.round(state.mouseY) - 8);
+    drawSprite(ctx, 'tower_' + cursorType, Math.round(state.mouseX) - 8, Math.round(state.mouseY) - 8);
     ctx.globalAlpha = 1.0;
   }
 
@@ -290,7 +320,8 @@ function drawRangePreview(ctx) {
   if (!tile) return;
 
   if (tile.type === 'GRASS') {
-    const def = TOWER_DEFS[getSelectedTowerType()];
+    const selType = getSelectedTowerType();
+    const def = selType ? TOWER_DEFS[selType] : null;
     if (def) {
       const rangePx = def.range * 32;
       const cx = mx * 32 + 16;

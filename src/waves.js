@@ -1,5 +1,6 @@
 import { state, STATES, transitionTo } from './state.js';
 import { spawnEnemy } from './enemies.js';
+import { recordStat } from './stats.js';
 
 // Each spawn entry: { type: string, count: number, interval: number (seconds between spawns) }
 // Each wave: { waveNumber, spawns: [SpawnEntry], message?: string }
@@ -76,8 +77,11 @@ export function updateWaveSpawner(dt) {
 }
 
 function onWaveComplete() {
+  recordStat('totalWavesCleared');
   const totalWaves = state.mode === 'boss' ? 5 : 10;
   if (state.wave >= totalWaves) {
+    if (state.mode === 'boss') recordStat('bossGamesWon');
+    else recordStat('gamesWon');
     transitionTo(STATES.VICTORY);
   } else {
     transitionTo(STATES.WAVE_IDLE);

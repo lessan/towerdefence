@@ -1,6 +1,6 @@
 import { state, STATES, transitionTo, initGameState, getPath, isGameOver } from './state.js';
 import { flushInput, getSelectedTowerType, setSelectedTowerType } from './input.js';
-import { menuButtons } from './renderer.js';
+import { menuButtons, menuClearBtn } from './renderer.js';
 import { sidebarHitTest } from './ui.js';
 import { placeTower, sellTower } from './towers.js';
 import { getTile } from './grid.js';
@@ -8,6 +8,7 @@ import { updateEnemies } from './enemies.js';
 import { updateCombat } from './combat.js';
 import { updateWaveSpawner, startWave } from './waves.js';
 import { checkUnlock } from './unlock.js';
+import { clearAllData } from './stats.js';
 
 export function update(dt) {
   switch (state.current) {
@@ -41,8 +42,12 @@ export function update(dt) {
             const tileY = Math.floor(e.y / 32);
             const tile = getTile(state.grid, tileX, tileY);
             if (tile && tile.type === 'TOWER') {
-              // Select placed tower for inspection
-              state.selectedTowerTile = { x: tileX, y: tileY };
+              // Toggle: click same tower again to deselect
+              if (state.selectedTowerTile && state.selectedTowerTile.x === tileX && state.selectedTowerTile.y === tileY) {
+                state.selectedTowerTile = null;
+              } else {
+                state.selectedTowerTile = { x: tileX, y: tileY };
+              }
             } else {
               // Deselect any selected tower, then place
               state.selectedTowerTile = null;
@@ -140,11 +145,16 @@ function handleSidebarAction(action) {
       }
       break;
     default:
-      // Tower selection
+      // Tower selection (toggle: clicking selected tower un-selects)
       if (action.startsWith('tower:')) {
         const type = action.split(':')[1];
         if (type === 'lemonadecan' && !state.unlocks.lemonadecan) break;
-        setSelectedTowerType(type);
+        if (getSelectedTowerType() === type) {
+          setSelectedTowerType(null);
+        } else {
+          setSelectedTowerType(type);
+        }
+        state.selectedTowerTile = null;
       }
   }
 }
@@ -154,6 +164,17 @@ function updateMenu() {
   for (const e of events) {
     if (e.type !== 'click' || e.button !== 0) continue;
     const { x, y } = e;
+
+    // Check clear data button
+    if (x >= menuClearBtn.x && x <= menuClearBtn.x + menuClearBtn.w &&
+        y >= menuClearBtn.y && y <= menuClearBtn.y + menuClearBtn.h) {
+      if (typeof confirm !== 'undefined' && confirm('Clear all stats and unlock data?\n\nThis will remove your Lemonade Can unlock.')) {
+        clearAllData();
+        state.unlocks.lemonadecan = false;
+        state.newUnlock = false;
+      }
+      continue;
+    }
 
     const rb = menuButtons.regular;
     if (x >= rb.x && x < rb.x + rb.w && y >= rb.y && y < rb.y + rb.h) {

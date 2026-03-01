@@ -2,6 +2,7 @@ import { getTile, setTile, isBuildable, TILE_TYPES } from './grid.js';
 import { isPathBlocked } from './pathfinding.js';
 import { state } from './state.js';
 import { canAfford, spend, earn } from './economy.js';
+import { recordStat } from './stats.js';
 
 export const TOWER_DEFS = {
   crossbow: {
@@ -81,6 +82,7 @@ export function placeTower(tileX, tileY, type) {
   state.towers.push(tower);
   spend(def.cost);
   state.gridDirty = true;
+  recordStat('towersPlaced');
   return { success: true };
 }
 
@@ -96,6 +98,7 @@ export function sellTower(tileX, tileY) {
   setTile(state.grid, tileX, tileY, TILE_TYPES.GRASS);
   earn(refund);
   state.gridDirty = true;
+  recordStat('towersSold');
   return { success: true, refund };
 }
 

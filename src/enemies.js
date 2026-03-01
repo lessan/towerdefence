@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { earn } from './economy.js';
+import { recordStat } from './stats.js';
 
 export const ENEMY_DEFS = {
   goblin:  { name: 'Goblin',          hp: 60,  speed: 80, goldReward: 10,  special: null },
@@ -111,6 +112,7 @@ export function killEnemy(enemy) {
   if (enemy.dead) return;
   enemy.dead = true;
   earn(enemy.goldReward);
+  recordStat('enemiesKilled');
 
   // Split (Twinblood Ogre)
   if (enemy.special === 'split') {

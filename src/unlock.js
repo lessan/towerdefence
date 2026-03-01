@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { recordStat } from './stats.js';
 
 const UNLOCK_KEY = 'td_lemonade_unlocked';
 
@@ -15,6 +16,7 @@ export function checkUnlock() {
   if (!isUnlocked(UNLOCK_KEY)) {
     setUnlocked(UNLOCK_KEY);
     state.newUnlock = true;
+    recordStat('lemonadeCanUnlocks');
     return true;
   }
   return false;
@@ -30,5 +32,9 @@ export function setUnlocked(key) {
 
 // Call on game boot to load persisted unlocks into state
 export function loadUnlocks() {
+  state.unlocks.lemonadecan = isUnlocked(UNLOCK_KEY);
+}
+
+export function reloadUnlocks() {
   state.unlocks.lemonadecan = isUnlocked(UNLOCK_KEY);
 }

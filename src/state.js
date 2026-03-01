@@ -1,5 +1,6 @@
 import { createGrid } from './grid.js';
 import { findPath } from './pathfinding.js';
+import { recordStat } from './stats.js';
 
 export const STATES = {
   MENU: 'MENU',
@@ -60,6 +61,7 @@ export function initGameState(mode) {
   state.newUnlock = false;
   state.unlockChecked = false;
   state.selectedTowerTile = null;
+  recordStat('gamesStarted');
 }
 
 // Call after any grid change. Recomputes path and caches it.
