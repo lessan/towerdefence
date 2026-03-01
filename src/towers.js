@@ -56,7 +56,7 @@ export const TOWER_DEFS = {
 // Returns { success: boolean, reason?: string }
 export function placeTower(tileX, tileY, type) {
   const def = TOWER_DEFS[type];
-  if (!def) return { success: false, reason: 'Unknown tower type' };
+  if (!def) return { success: false, reason: 'Select a tower to build [1\u20134]' };
   if (!isBuildable(state.grid, tileX, tileY)) return { success: false, reason: 'Not buildable' };
   if (!canAfford(def.cost)) return { success: false, reason: 'Not enough gold' };
 
